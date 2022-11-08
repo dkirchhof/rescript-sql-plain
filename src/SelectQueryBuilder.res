@@ -1,17 +1,19 @@
 open Index
 
-external toAnyTable: Table.t<_, _> => Table.t<any, any> = "%identity"
+external toAnyTable: Table.t<_, _> => Table.t<Any.t, Any.t> = "%identity"
 
 type t<'projectables, 'selectables> = {
-  from: Table.t<any, any>,
-  joins: array<Table.t<any, any>>,
+  from: Table.t<Any.t, Any.t>,
+  joins: array<Table.t<Any.t, Any.t>>,
   projectables: 'projectables,
   selectables: 'selectables,
+  selection: option<Expr.t>,
 }
 
 type executable<'resultset> = {
-  from: Table.t<any, any>,
-  joins: array<Table.t<any, any>>,
+  from: Table.t<Any.t, Any.t>,
+  joins: array<Table.t<Any.t, Any.t>>,
+  selection: option<Expr.t>,
   resultset: 'resultset,
 }
 
@@ -20,17 +22,18 @@ let from = (table: Table.t<'columns, _>): t<'columns, 'columns> => {
   joins: [],
   projectables: table.columns,
   selectables: table.columns,
+  selection: None,
 }
 
 let innerJoin1 = (qb: t<'p1, 's1>, table: Table.t<'columns, _>): t<('p1, 'columns), ('s1, 'columns)> => {
-  from: qb.from,
+  ...qb,
   joins: [table->toAnyTable],
   projectables: (qb.projectables, table.columns),
   selectables: (qb.selectables, table.columns),
 }
 
 let leftJoin1 = (qb: t<'p1, 's1>, table: Table.t<'columns, _>): t<('p1, option<'columns>), ('s1, 'columns)> => {
-  from: qb.from,
+  ...qb,
   joins: [table->toAnyTable],
   projectables: (qb.projectables, Some(table.columns)),
   selectables: (qb.selectables, table.columns),
@@ -46,16 +49,16 @@ let leftJoin1 = (qb: t<'p1, 's1>, table: Table.t<'columns, _>): t<('p1, option<'
 /*   } */
 /* } */
 
-let where = (qb: t<_, 'selectables>, getColumns) => {
-  let columns = getColumns(qb.selectables)
+let where = (qb: t<_, 'selectables>, getSelection) => {
+  let selection = getSelection(qb.selectables)
 
-  qb
+  {...qb, selection: Some(selection)}
 }
 
 let select = (qb: t<'projectables, _>, getProjection): executable<_> => {
   let resultset = getProjection(qb.projectables)
 
-  {from: qb.from, joins: qb.joins, resultset}
+  {from: qb.from, joins: qb.joins, selection: qb.selection, resultset}
 }
 
 /* let select2 = (qb: t2<'sources>, getColumns) => { */

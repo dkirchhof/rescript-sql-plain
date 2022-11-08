@@ -1,5 +1,3 @@
-type any
-
 module Column = {
   type t = {
     table: string,

@@ -82,20 +82,22 @@ module Songs = {
 /* Js.log(DDL.toSQL(Songs.table)) */
 
 open SelectQueryBuilder
+open Expr
 let o = Belt.Option.map
 
 from(Albums.table)->select(a => {"id": a.id})->Js.log
 
 from(Albums.table)
 ->innerJoin1(Songs.table)
-->where(((album, song)) => album.id === song.id)
+->where(((album, song)) => eq(album.id, song.id))
 ->select(((album, song)) => {"albumId": album.id, "songId": song.id})
 ->Js.log
 
 from(Albums.table)
 ->leftJoin1(Songs.table)
-->where(((album, song)) => album.id === song.id)
-->select(((album, song)) => {"albumId": album.id, "songId": o(song, s => s.id)})
+->where(((album, song)) => eq(album.id, song.id))
+/* ->select(((album, song)) => {"albumId": album.id, "songId": o(song, s => s.id)}) */
+->select(((album, song)) => o(song, s => {"albumId": album.id, "songId": s.id}))
 ->Js.log
 
 /* Albums.table->make->leftJoin1(Songs.table)->leftJoin2(Songs.table)->Js.log //select(((albums, songs)) => {albumId: albums.id, songId: songs.id})->toSQL->Js.log */
