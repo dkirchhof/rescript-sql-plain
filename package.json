@@ -1,0 +1,12 @@
+{
+  "name": "rescript-sql2",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "dev": "rescript build -w"
+  },
+  "devDependencies": {
+    "rescript": "^10.1.0-rc.2"
+  }
+}
