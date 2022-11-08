@@ -2,9 +2,17 @@ open Index
 
 external toAnyTable: Table.t<_, _> => Table.t<Any.t, Any.t> = "%identity"
 
+type joinType = Inner | Left
+
+type join = {
+  table: Table.t<Any.t, Any.t>,
+  joinType: joinType,
+  on: Expr.t,
+}
+
 type t<'projectables, 'selectables> = {
   from: Table.t<Any.t, Any.t>,
-  joins: array<Table.t<Any.t, Any.t>>,
+  joins: array<join>,
   projectables: 'projectables,
   selectables: 'selectables,
   selection: option<Expr.t>,
@@ -12,7 +20,7 @@ type t<'projectables, 'selectables> = {
 
 type executable<'resultset> = {
   from: Table.t<Any.t, Any.t>,
-  joins: array<Table.t<Any.t, Any.t>>,
+  joins: array<join>,
   selection: option<Expr.t>,
   resultset: 'resultset,
 }
@@ -25,28 +33,56 @@ let from = (table: Table.t<'columns, _>): t<'columns, 'columns> => {
   selection: None,
 }
 
-let innerJoin1 = (qb: t<'p1, 's1>, table: Table.t<'columns, _>): t<('p1, 'columns), ('s1, 'columns)> => {
-  ...qb,
-  joins: [table->toAnyTable],
-  projectables: (qb.projectables, table.columns),
-  selectables: (qb.selectables, table.columns),
+let innerJoin1 = (qb: t<'p1, 's1>, table: Table.t<'columns, _>, getCondition): t<
+  ('p1, 'columns),
+  ('s1, 'columns),
+> => {
+  let projectables = (qb.projectables, table.columns)
+  let selectables = (qb.selectables, table.columns)
+
+  let join = {
+    table: table->toAnyTable,
+    joinType: Inner,
+    on: getCondition(selectables),
+  }
+
+  {
+    ...qb,
+    joins: [join],
+    projectables,
+    selectables,
+  }
 }
 
-let leftJoin1 = (qb: t<'p1, 's1>, table: Table.t<'columns, _>): t<('p1, option<'columns>), ('s1, 'columns)> => {
-  ...qb,
-  joins: [table->toAnyTable],
-  projectables: (qb.projectables, Some(table.columns)),
-  selectables: (qb.selectables, table.columns),
+let leftJoin1 = (qb: t<'p1, 's1>, table: Table.t<'columns, _>, getCondition): t<
+  ('p1, option<'columns>),
+  ('s1, 'columns),
+> => {
+  let projectables = (qb.projectables, Some(table.columns))
+  let selectables = (qb.selectables, table.columns)
+
+  let join = {
+    table: table->toAnyTable,
+    joinType: Left,
+    on: getCondition(selectables),
+  }
+
+  {
+    ...qb,
+    joins: [join],
+    projectables,
+    selectables,
+  }
 }
 
 /* let leftJoin2 = (qb: t<('p1, 'p2)>, table: Table.t<'columns, _>): t<('p1, 'p2, 'columns)> => { */
-/*   let (p1, p2) = qb.projectables */
+/* let (p1, p2) = qb.projectables */
 
-/*   { */
-/*     from: qb.from, */
-/*     joins: Js.Array.concat(qb.joins, [table->toAnyTable]), */
-/*     projectables: (p1, p2, table.columns), */
-/*   } */
+/* { */
+/* from: qb.from, */
+/* joins: Js.Array.concat(qb.joins, [table->toAnyTable]), */
+/* projectables: (p1, p2, table.columns), */
+/* } */
 /* } */
 
 let where = (qb: t<_, 'selectables>, getSelection) => {
