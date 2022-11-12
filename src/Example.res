@@ -83,39 +83,36 @@ Js.log(DDL.toSQL(Songs.table))
 
 open SelectQueryBuilder
 open Expr
-let o = Belt.Option.map
 
 from(Albums.table)->select(a => {"id": a.id})->Js.log
 
 from(Albums.table)
-->innerJoin1(Songs.table, ((album, song)) => eq(song.albumId, album.id))
+->join1(Songs.table, Inner, ((album, song)) => eq(song.albumId, album.id))
 ->where(((album, song)) => eq(album.id, song.id))
 ->select(((album, song)) => {"albumId": album.id, "songId": song.id})
 ->Js.log
 
 from(Albums.table)
-->leftJoin1(Songs.table, ((album, song)) => eq(song.albumId, album.id))
+->join1(Songs.table, Inner, ((album, song)) => eq(song.albumId, album.id))
 ->where(((album, song)) => eq(album.id, song.id))
-->select(((album, song)) => {"albumId": album.id, "songId": o(song, s => s.id)})
+->select(((album, song)) => {"albumId": album.id, "songId": song.id})
 ->Js.log
 
 from(Artists.table)
-->leftJoin1(Albums.table, ((artist, album)) => eq(album.artistId, artist.id))
-->leftJoin2(Songs.table, ((_artist, album, song)) => eq(song.albumId, album.id))
-->select(((artist, album, song)) =>
-  {"artistId": artist.id, "albumId": o(album, a => a.id), "songId": o(song, s => s.id)}
-)
+->join1(Albums.table, Left, ((artist, album)) => eq(album.artistId, artist.id))
+->join2(Songs.table, Left, ((_artist, album, song)) => eq(song.albumId, album.id))
+->select(((artist, album, song)) => {"artistId": artist.id, "albumId": album.id, "songId": song.id})
 ->Js.log
 
 from(Artists.table)
-->leftJoin1(Albums.table, ((artist, album)) => eq(album.artistId, artist.id))
+->join1(Albums.table, Left, ((artist, album)) => eq(album.artistId, artist.id))
 ->select(((artist, album)) =>
   {
     "artistId": artist.id,
     "artistName": artist.name,
-    "albumId": o(album, a => a.id),
-    "albumName": o(album, a => a.name),
-    "albumYear": o(album, a => a.year),
+    "albumId": album.id,
+    "albumName": album.name,
+    "albumYear": album.year,
   }
 )
 ->Js.log
@@ -123,10 +120,10 @@ from(Artists.table)
 type row = {
   "artistId": int,
   "artistName": string,
-  "albumId": option<int>,
-  "albumName": option<string>,
-  "songId": option<int>,
-  "songName": option<string>,
+  "albumId": int,
+  "albumName": string,
+  "songId": int,
+  "songName": string,
 }
 
 let rows: array<row> = [
@@ -189,22 +186,26 @@ let createMapper: ('a => 'b) => 'b = %raw(`
   }
 `)
 
-let mapper = createMapper((row: row) => [ 
+let mapper = createMapper((row: row) => [
   {
     id: row["artistId"],
     name: row["artistName"],
-    albumsWithSongs: [{
-      id: row["albumId"]->Belt.Option.getExn,
-      artistId: row["artistId"],
-      name: row["albumName"]->Belt.Option.getExn,
-      songs: [{
-          id: row["songId"]->Belt.Option.getExn,
-          albumId: row["albumId"]->Belt.Option.getExn,
-          name: row["songName"]->Belt.Option.getExn,
-      }],
-    }],
-  }]
-)
+    albumsWithSongs: [
+      {
+        id: row["albumId"],
+        artistId: row["artistId"],
+        name: row["albumName"],
+        songs: [
+          {
+            id: row["songId"],
+            albumId: row["albumId"],
+            name: row["songName"],
+          },
+        ],
+      },
+    ],
+  },
+])
 
 %%raw(`
   import { inspect } from "util";
