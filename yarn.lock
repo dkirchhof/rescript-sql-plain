@@ -2,7 +2,43 @@
 # yarn lockfile v1
 
 
-rescript@^10.1.0-rc.2:
-  version "10.1.0-rc.2"
-  resolved "https://registry.yarnpkg.com/rescript/-/rescript-10.1.0-rc.2.tgz#c24bfe853f97c0ed6556ebd388e84b76e1cf994f"
-  integrity sha512-CZuzCjc4gc78WBd/oEUmrz8k6hoR3DiEo6A1myJ9EkkBV97jZM92IcFSxbQJZ6SFr4bvsym4WbvNfQ0AYBXQ3g==
+"lodash.isarray@^4.0.0":
+  "integrity" "sha512-V8ViWvoNlXpCrB6Ewaj3ScRXUpmCvqp4tJUxa3dlovuJj/8lp3SND5Kw4v5OeuHgoyw4qJN+gl36qZqp6WYQ6g=="
+  "resolved" "https://registry.npmjs.org/lodash.isarray/-/lodash.isarray-4.0.0.tgz"
+  "version" "4.0.0"
+
+"lodash.isfunction@^3.0.9":
+  "integrity" "sha512-AirXNj15uRIMMPihnkInB4i3NHeb4iBtNg9WRWuK2o31S+ePwwNmDPaTL3o7dTJ+VXNZim7rFs4rxN4YU1oUJw=="
+  "resolved" "https://registry.npmjs.org/lodash.isfunction/-/lodash.isfunction-3.0.9.tgz"
+  "version" "3.0.9"
+
+"lodash.isplainobject@^4.0.6":
+  "integrity" "sha512-oSXzaWypCMHkPC3NvBEaPHf0KsA5mvPrOPgQWDsbg8n7orZ290M0BmC/jgRZ4vcJ6DTAhjrsSYgdsW/F+MFOBA=="
+  "resolved" "https://registry.npmjs.org/lodash.isplainobject/-/lodash.isplainobject-4.0.6.tgz"
+  "version" "4.0.6"
+
+"lodash.keys@^4.2.0":
+  "integrity" "sha512-J79MkJcp7Df5mizHiVNpjoHXLi4HLjh9VLS/M7lQSGoQ+0oQ+lWEigREkqKyizPB1IawvQLLKY8mzEcm1tkyxQ=="
+  "resolved" "https://registry.npmjs.org/lodash.keys/-/lodash.keys-4.2.0.tgz"
+  "version" "4.2.0"
+
+"lodash.values@^4.3.0":
+  "integrity" "sha512-r0RwvdCv8id9TUblb/O7rYPwVy6lerCbcawrfdo9iC/1t1wsNMJknO79WNBgwkH0hIeJ08jmvvESbFpNb4jH0Q=="
+  "resolved" "https://registry.npmjs.org/lodash.values/-/lodash.values-4.3.0.tgz"
+  "version" "4.3.0"
+
+"nesthydrationjs@^2.0.0":
+  "integrity" "sha512-5XiGmDrMSDLvBbZJSIKNlnD4Xg6PEL+Tax4qdNYeNfCi9n7W6o4L3NsiFh+qBHxe3NIvDzL6fYsg7jGEeB78oQ=="
+  "resolved" "https://registry.npmjs.org/nesthydrationjs/-/nesthydrationjs-2.0.0.tgz"
+  "version" "2.0.0"
+  dependencies:
+    "lodash.isarray" "^4.0.0"
+    "lodash.isfunction" "^3.0.9"
+    "lodash.isplainobject" "^4.0.6"
+    "lodash.keys" "^4.2.0"
+    "lodash.values" "^4.3.0"
+
+"rescript@^10.1.0-rc.2":
+  "integrity" "sha512-CZuzCjc4gc78WBd/oEUmrz8k6hoR3DiEo6A1myJ9EkkBV97jZM92IcFSxbQJZ6SFr4bvsym4WbvNfQ0AYBXQ3g=="
+  "resolved" "https://registry.npmjs.org/rescript/-/rescript-10.1.0-rc.2.tgz"
+  "version" "10.1.0-rc.2"

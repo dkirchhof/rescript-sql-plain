@@ -8,5 +8,8 @@
   },
   "devDependencies": {
     "rescript": "^10.1.0-rc.2"
+  },
+  "dependencies": {
+    "nesthydrationjs": "^2.0.0"
   }
 }

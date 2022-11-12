@@ -37,8 +37,11 @@ let innerJoin1 = (qb: t<'p1, 's1>, table: Table.t<'columns, _>, getCondition): t
   ('p1, 'columns),
   ('s1, 'columns),
 > => {
-  let projectables = (qb.projectables, table.columns)
-  let selectables = (qb.selectables, table.columns)
+  let p1 = qb.projectables
+  let s1 = qb.selectables
+
+  let projectables = (p1, table.columns)
+  let selectables = (s1, table.columns)
 
   let join = {
     table: table->toAnyTable,
@@ -48,7 +51,7 @@ let innerJoin1 = (qb: t<'p1, 's1>, table: Table.t<'columns, _>, getCondition): t
 
   {
     ...qb,
-    joins: [join],
+    joins: Js.Array.concat(qb.joins, [join]),
     projectables,
     selectables,
   }
@@ -69,21 +72,59 @@ let leftJoin1 = (qb: t<'p1, 's1>, table: Table.t<'columns, _>, getCondition): t<
 
   {
     ...qb,
-    joins: [join],
+    joins: Js.Array.concat(qb.joins, [join]),
     projectables,
     selectables,
   }
 }
 
-/* let leftJoin2 = (qb: t<('p1, 'p2)>, table: Table.t<'columns, _>): t<('p1, 'p2, 'columns)> => { */
-/* let (p1, p2) = qb.projectables */
+let innerJoin2 = (qb: t<('p1, 'p2), ('s1, 's2)>, table: Table.t<'columns, _>, getCondition): t<
+  ('p1, 'p2, 'columns),
+  ('s1, 's2, 'columns),
+> => {
+  let (p1, p2) = qb.projectables
+  let (s1, s2) = qb.selectables
 
-/* { */
-/* from: qb.from, */
-/* joins: Js.Array.concat(qb.joins, [table->toAnyTable]), */
-/* projectables: (p1, p2, table.columns), */
-/* } */
-/* } */
+  let projectables = (p1, p2, table.columns)
+  let selectables = (s1, s2, table.columns)
+
+  let join = {
+    table: table->toAnyTable,
+    joinType: Inner,
+    on: getCondition(selectables),
+  }
+
+  {
+    ...qb,
+    joins: Js.Array.concat(qb.joins, [join]),
+    projectables,
+    selectables,
+  }
+}
+
+let leftJoin2 = (qb: t<('p1, 'p2), ('s1, 's2)>, table: Table.t<'columns, _>, getCondition): t<
+  ('p1, 'p2, option<'columns>),
+  ('s1, 's2, 'columns),
+> => {
+  let (p1, p2) = qb.projectables
+  let (s1, s2) = qb.selectables
+
+  let projectables = (p1, p2, Some(table.columns))
+  let selectables = (s1, s2, table.columns)
+
+  let join = {
+    table: table->toAnyTable,
+    joinType: Inner,
+    on: getCondition(selectables),
+  }
+
+  {
+    ...qb,
+    joins: Js.Array.concat(qb.joins, [join]),
+    projectables,
+    selectables,
+  }
+}
 
 let where = (qb: t<_, 'selectables>, getSelection) => {
   let selection = getSelection(qb.selectables)
