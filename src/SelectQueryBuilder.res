@@ -1,141 +1,144 @@
 open Index
 
-external toAnyTable: Table.t<_, _> => Table.t<Any.t, Any.t> = "%identity"
+module Source = {
+  type t = {
+    name: string,
+    alias: string,
+  }
+
+  let toSQL = source => `${source.name} AS ${source.alias}`
+}
+
+module Join = {
+  type joinType = Inner | Left
+
+  type t = {
+    source: Source.t,
+    joinType: joinType,
+    on: Expr.t,
+  }
+
+  let joinTypeToString = joinType =>
+    switch joinType {
+    | Inner => "INNER JOIN"
+    | Left => "LEFT JOIN"
+    }
+
+  let toSQL = join => {
+    let joinTypeString = joinTypeToString(join.joinType)
+    let tableName = join.source.name
+    let tableAlias = join.source.alias
+    let exprString = Expr.toSQL(join.on)
+
+    `${joinTypeString} ${tableName} AS ${tableAlias} ON ${exprString}`
+  }
+}
 
 type projection<'definition> = {
   columns: array<string>,
   definition: 'definition,
 }
 
-let makeProjection: ('row => 'result) => projection<'result> = %raw(`
-  function(cb) {
-    const columns = new Set();
-
-    const proxy = new Proxy({}, {
-      get(_, index) {
-        return new Proxy({}, {
-          get(_, prop) {
-            const column = index + "_" + prop;
-
-            columns.add(column);
-
-            return column;
-          },
-        });
-      },
-    });
-
-    return {
-      columns,
-      definition: cb(proxy),
-    };
-  }
-`)
-
-type joinType = Inner | Left
-
-type join = {
-  table: Table.t<Any.t, Any.t>,
-  joinType: joinType,
-  on: Expr.t,
-}
-
 type t<'columns> = {
-  from: Table.t<Any.t, Any.t>,
-  joins: array<join>,
-  columns: 'columns,
+  from: Source.t,
+  joins: array<Join.t>,
+  columns: Utils.ItemOrArray.t<Js.Dict.t<string>>,
   selection: option<Expr.t>,
 }
 
 type executable<'result> = {
-  from: Table.t<Any.t, Any.t>,
-  joins: array<join>,
+  from: Source.t,
+  joins: array<Join.t>,
   selection: option<Expr.t>,
   projection: projection<'result>,
 }
 
+%%private(
+  let mapColumns = (columns, alias) => {
+    columns
+    ->Obj.magic
+    ->Js.Dict.keys
+    ->Js.Array2.map(column => (column, `${alias}.${column}`))
+    ->Js.Dict.fromArray
+  }
+
+  let join = (qb, table: Table.t<_>, joinType, getCondition, alias) => {
+    let newColumns = Utils.ItemOrArray.concat(qb.columns, [mapColumns(table.columns, alias)])
+
+    let join: Join.t = {
+      source: {name: table.name, alias},
+      joinType,
+      on: Utils.ItemOrArray.apply(newColumns, getCondition),
+    }
+
+    let newJoins = Js.Array2.concat(qb.joins, [join])
+
+    {
+      ...qb,
+      joins: newJoins,
+      columns: newColumns,
+    }
+  }
+)
+
 let from = (table: Table.t<'columns, _>): t<'columns> => {
-  from: table->toAnyTable,
+  from: {name: table.name, alias: "a"},
   joins: [],
-  columns: table.columns,
+  columns: Item(mapColumns(table.columns, "a")),
   selection: None,
 }
 
-let join1 = (qb: t<'c1>, table: Table.t<'columns, _>, joinType, getCondition): t<(
-  'c1,
-  'columns,
-)> => {
-  let c1 = qb.columns
-
-  let columns = (c1, table.columns)
-
-  let join = {
-    table: table->toAnyTable,
-    joinType,
-    on: getCondition(columns),
-  }
-
-  {
-    ...qb,
-    joins: Js.Array.concat(qb.joins, [join]),
-    columns,
-  }
+let join1 = (
+  qb: t<'c1>,
+  table: Table.t<'columns, _>,
+  joinType,
+  getCondition: (('c1, 'columns)) => Expr.t,
+): t<('c1, 'columns)> => {
+  join(qb, table, joinType, getCondition, "b")
 }
 
-let join2 = (qb: t<('c1, 'c2)>, table: Table.t<'columns, _>, joinType, getCondition): t<(
-  'c1,
-  'c2,
-  'columns,
-)> => {
-  let (c1, c2) = qb.columns
-
-  let columns = (c1, c2, table.columns)
-
-  let join = {
-    table: table->toAnyTable,
-    joinType,
-    on: getCondition(columns),
-  }
-
-  {
-    ...qb,
-    joins: Js.Array.concat(qb.joins, [join]),
-    columns,
-  }
+let join2 = (
+  qb: t<('c1, 'c2)>,
+  table: Table.t<'columns, _>,
+  joinType,
+  getCondition: (('c1, 'c2, 'columns)) => Expr.t,
+): t<('c1, 'c2, 'columns)> => {
+  join(qb, table, joinType, getCondition, "c")
 }
 
-let where = (qb, getSelection) => {
-  let selection = getSelection(qb.columns)
+let where = (qb: t<'columns>, getSelection: 'columns => Expr.t): t<'columns> => {
+  let selection = Utils.ItemOrArray.apply(qb.columns, getSelection)
 
   {...qb, selection: Some(selection)}
 }
 
 let select = (qb: t<'columns>, getProjection: 'columns => 'result) => {
-  let projection = makeProjection(getProjection)
+  let definition = Utils.ItemOrArray.apply(qb.columns, getProjection)
+  let columns = Utils.getStringValuesRec(definition)
 
-  {from: qb.from, joins: qb.joins, selection: qb.selection, projection}
+  {from: qb.from, joins: qb.joins, selection: qb.selection, projection: {definition, columns}}
 }
 
-let mapResult = (executable: executable<'result>, rows) => {
+let toSQL = executable => {
+  open StringBuilder
+
+  let projectionString =
+    make()
+    ->addM(0, executable.projection.columns->Js.Array2.map(column => `${column} AS '${column}'`))
+    ->build(", ")
+
+  make()
+  ->addS(0, `SELECT ${projectionString}`)
+  ->addS(0, `FROM ${executable.from->Source.toSQL}`)
+  ->addM(0, executable.joins->Js.Array2.map(Join.toSQL))
+  ->addSO(0, executable.selection->Belt.Option.map(expr => `WHERE ${Expr.toSQL(expr)}`))
+  ->build("\n")
+}
+
+let mapOne = (executable: executable<'result>, rows) => {
+  NestHydrationJs.make()->NestHydrationJs.nestOne(rows, executable.projection.definition)
+}
+
+let mapMany = (executable: executable<'result>, rows) => {
   NestHydrationJs.make()->NestHydrationJs.nestMany(rows, [executable.projection.definition])
 }
-/* let select2 = (qb: t2<'sources>, getColumns) => { */
-/* let columns = getColumns(qb.projectables) */
-
-/* qb */
-/* } */
-
-/* let toSQL = (qb: t<'columns, _>) => { */
-/* open! StringBuilder */
-
-/* make() */
-/* ->addS( */
-/* 0, */
-/* `SELECT ${qb.columns */
-/* ->Obj.magic */
-/* ->Js.Dict.values */
-/* ->Belt.Array.joinWith(",", (column: Column.t) => column.name)}`, */
-/* ) */
-/* /1* ->addS(0, `FROM ${qb.from.name}`) *1/ */
-/* ->build */
-/* } */

@@ -46,7 +46,7 @@ let toSQL = (table: Index.Table.t<_>) => {
 
   make()
   ->addS(0, `CREATE TABLE ${table.name} (`)
-  ->addS(0, sb2->buildWithComma)
+  ->addS(0, sb2->build(",\n"))
   ->addS(0, `)`)
-  ->build
+  ->build("\n")
 }

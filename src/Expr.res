@@ -1,6 +1,6 @@
 type rec t =
-  | And(array<t>)
-  | Or(array<t>)
+  /* | And(array<t>) */
+  /* | Or(array<t>) */
   | Equal(Any.t, Any.t)
   /* | NotEqual(Ref.anyRef, Ref.anyRef) */
   /* | GreaterThan(Ref.anyRef, Ref.anyRef) */
@@ -12,8 +12,8 @@ type rec t =
   /* | In(Ref.anyRef, array<Ref.anyRef>) */
   /* | NotIn(Ref.anyRef, array<Ref.anyRef>) */
 
-let and_ = ands => And(ands)
-let or_ = ors => Or(ors)
+/* let and_ = ands => And(ands) */
+/* let or_ = ors => Or(ors) */
 
 let eq = (left: 't, right: 't) => Equal(left->Obj.magic, right->Obj.magic)
 /* let \"==" = eq */
@@ -64,6 +64,11 @@ let eq = (left: 't, right: 't) => Equal(left->Obj.magic, right->Obj.magic)
 /*     `${ls} NOT BETWEEN ${r1s} AND ${r2s}` */
 /*   } */
 /* } */
+
+let toSQL = expr => 
+  switch expr {
+    | Equal(left, right) => `${left->Obj.magic} = ${right->Obj.magic}`
+}
 
 /* let rec toSQL = (expr, queryToString) => */
 /*   switch expr { */
