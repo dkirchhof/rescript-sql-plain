@@ -1,4 +1,18 @@
-open Index
+%%raw(`
+  import { inspect } from "util";
+`)
+
+let log: 'a => unit = %raw(`
+  function log(message) {
+    if (typeof message === "string") {
+      console.log(message);
+    } else {
+      console.log(inspect(message, false, 5, true));
+    }
+  }
+`)
+
+let connection = SQLite3.createConnection("test.db")
 
 module Artists = {
   type columns = {
@@ -6,13 +20,13 @@ module Artists = {
     name: string,
   }
 
-  type constraints = {pk: Constraint.t}
+  type constraints = {pk: Schema.Constraint.t}
 
-  let table = Table.make(
+  let table = Schema.Table.make(
     "artists",
-    {id: Column.integer({size: 10}), name: Column.varchar({size: 255})},
+    {id: Schema.Column.integer({size: 10}), name: Schema.Column.varchar({size: 255})},
     columns => {
-      pk: Constraint.primaryKey(columns.id),
+      pk: Schema.Constraint.primaryKey(columns.id),
     },
   )
 }
@@ -25,23 +39,23 @@ module Albums = {
     year: int,
   }
 
-  type constraints = {pk: Constraint.t, fkArtist: Constraint.t}
+  type constraints = {pk: Schema.Constraint.t, fkArtist: Schema.Constraint.t}
 
-  let table = Table.make(
+  let table = Schema.Table.make(
     "albums",
     {
-      id: Column.integer({size: 10}),
-      artistId: Column.integer({size: 10}),
-      name: Column.varchar({size: 255}),
-      year: Column.integer({size: 10}),
+      id: Schema.Column.integer({size: 10}),
+      artistId: Schema.Column.integer({size: 10}),
+      name: Schema.Column.varchar({size: 255}),
+      year: Schema.Column.integer({size: 10}),
     },
     columns => {
-      pk: Constraint.primaryKey(Artists.table.columns.name),
-      fkArtist: Constraint.foreignKey(
+      pk: Schema.Constraint.primaryKey(columns.id),
+      fkArtist: Schema.Constraint.foreignKey(
         ~ownColumn=columns.artistId,
         ~foreignColumn=Artists.table.columns.id,
-        ~onUpdate=Constraint.RESTRICT,
-        ~onDelete=Constraint.CASCADE,
+        ~onUpdate=Schema.Constraint.FKStrategy.Restrict,
+        ~onDelete=Schema.Constraint.FKStrategy.Cascade,
       ),
     },
   )
@@ -55,97 +69,138 @@ module Songs = {
     duration: string,
   }
 
-  type constraints = {pk: Constraint.t, fkAlbum: Constraint.t}
+  type constraints = {pk: Schema.Constraint.t, fkAlbum: Schema.Constraint.t}
 
-  let table = Table.make(
+  let table = Schema.Table.make(
     "songs",
     {
-      id: Column.integer({size: 10}),
-      albumId: Column.integer({size: 10}),
-      name: Column.varchar({size: 255}),
-      duration: Column.varchar({size: 255}),
+      id: Schema.Column.integer({size: 10}),
+      albumId: Schema.Column.integer({size: 10}),
+      name: Schema.Column.varchar({size: 255}),
+      duration: Schema.Column.varchar({size: 255}),
     },
     columns => {
-      pk: Constraint.primaryKey(Artists.table.columns.name),
-      fkAlbum: Constraint.foreignKey(
+      pk: Schema.Constraint.primaryKey(columns.id),
+      fkAlbum: Schema.Constraint.foreignKey(
         ~ownColumn=columns.albumId,
         ~foreignColumn=Albums.table.columns.id,
-        ~onUpdate=Constraint.RESTRICT,
-        ~onDelete=Constraint.CASCADE,
+        ~onUpdate=Schema.Constraint.FKStrategy.Restrict,
+        ~onDelete=Schema.Constraint.FKStrategy.Cascade,
       ),
     },
   )
 }
 
-/* Js.log(DDL.toSQL(Artists.table)) */
-/* Js.log(DDL.toSQL(Albums.table)) */
-/* Js.log(DDL.toSQL(Songs.table)) */
+module Users = {
+  type columns = {id: int, name: string}
+  type constraints = {pk: Schema.Constraint.t}
 
-open SelectQueryBuilder
-open Expr
-
-from(Albums.table)
-->where(a => eq(a.id, 1))
-->select(a => {"id": a.id})
-->SelectQueryBuilder.toSQL
-->Js.log
-
-type song = {
-  id: int,
-  name: string,
+  let table = Schema.Table.make(
+    "users",
+    {
+      id: Schema.Column.integer({size: 10}),
+      name: Schema.Column.varchar({size: 10}),
+    },
+    columns => {
+      pk: Schema.Constraint.primaryKey(columns.id),
+    },
+  )
 }
 
-type album = {
-  id: int,
-  name: string,
-  songs: array<song>,
+module Favorites = {
+  type columns = {songId: int, userId: int}
+  type constraints = {
+    pk: Schema.Constraint.t,
+    fkSong: Schema.Constraint.t,
+    fkUser: Schema.Constraint.t,
+  }
+
+  let table = Schema.Table.make(
+    "favorites",
+    {
+      songId: Schema.Column.integer({size: 10}),
+      userId: Schema.Column.integer({size: 10}),
+    },
+    columns => {
+      pk: Schema.Constraint.primaryKey((columns.songId, columns.userId)),
+      fkSong: Schema.Constraint.foreignKey(
+        ~ownColumn=columns.songId,
+        ~foreignColumn=Songs.table.columns.id,
+        ~onUpdate=Schema.Constraint.FKStrategy.Restrict,
+        ~onDelete=Schema.Constraint.FKStrategy.Cascade,
+      ),
+      fkUser: Schema.Constraint.foreignKey(
+        ~ownColumn=columns.userId,
+        ~foreignColumn=Users.table.columns.id,
+        ~onUpdate=Schema.Constraint.FKStrategy.Restrict,
+        ~onDelete=Schema.Constraint.FKStrategy.Cascade,
+      ),
+    },
+  )
 }
 
-type artistWithAlbums = {
-  id: int,
-  name: string,
-  albums: array<album>,
+let createTables = () => {
+  open CreateTableQueryBuilder
+
+  createTable(Artists.table)->SQL.fromCreateTableQuery->log
+  createTable(Albums.table)->SQL.fromCreateTableQuery->log
+  createTable(Songs.table)->SQL.fromCreateTableQuery->log
+  createTable(Users.table)->SQL.fromCreateTableQuery->log
+  createTable(Favorites.table)->SQL.fromCreateTableQuery->log
 }
 
-let q =
-  from(Artists.table)
-  ->join1(Albums.table, Left, ((artist, album)) => eq(album.artistId, artist.id))
-  ->join2(Songs.table, Left, ((_artist, album, song)) => eq(song.albumId, album.id))
-  ->where(((artist, _album, _song)) => eq(artist.id, 1))
-  ->select(((artist, album, song)) => {
-    id: artist.id,
-    name: artist.name,
-    albums: [
-      {
-        id: album.id,
-        name: album.name,
-        songs: [
-          {
-            id: song.id,
-            name: song.name,
-          },
-        ],
-      },
-    ],
-  })
+let selectNameFromArtist1 = () => {
+  open SelectQueryBuilder
+  open Expr
 
-let connection = SQLite3.createConnection("test.db")
-let sql = q->SelectQueryBuilder.toSQL
+  let q =
+    from(Artists.table)->where(artist => eq(artist.id, 1))->select(artist => {"name": artist.name})
 
-Js.log(sql)
+  let sql = SQL.fromSelectQuery(q)
+  let mapper = mapOne(q)
 
-let row = connection->SQLite3.prepare(sql)->SQLite3.get
-let rows = connection->SQLite3.prepare(sql)->SQLite3.all
+  let result = connection->SQLite3.prepare(sql)->SQLite3.get->Belt.Option.map(mapper)
 
-let result1 = row->Belt.Option.map(row => q->SelectQueryBuilder.mapOne(row))
-let result2 = q->SelectQueryBuilder.mapMany(rows)
+  log(sql)
+  log(result)
+}
 
-%%raw(`
-  import { inspect } from "util";
+let selectArtistsWithAlbumsWithSongs = () => {
+  open SelectQueryBuilder
+  open Expr
 
-  // console.log(inspect(q, false, 5, true));
-  console.log(inspect(result1, false, 5, true));
-  console.log(inspect(result2, false, 5, true));
-`)
+  let q =
+    from(Artists.table)
+    ->join1(Albums.table, Left, ((artist, album)) => eq(album.artistId, artist.id))
+    ->join2(Songs.table, Left, ((_artist, album, song)) => eq(song.albumId, album.id))
+    ->select(((artist, album, song)) => {
+      "id": artist.id,
+      "name": artist.name,
+      "albums": [
+        {
+          "id": album.id,
+          "name": album.name,
+          "songs": [
+            {
+              "id": song.id,
+              "name": song.name,
+            },
+          ],
+        },
+      ],
+    })
 
-// insertInto...values(default => { ...default, name: 'Test' })
+    let sql = SQL.fromSelectQuery(q)
+    let mapper = mapMany(q)
+
+    let result = connection->SQLite3.prepare(sql)->SQLite3.all->mapper
+
+    log(sql)
+    log(result)
+}
+
+createTables()
+selectNameFromArtist1()
+selectArtistsWithAlbumsWithSongs()
+
+/* // insertInto...values(default => { ...default, name: 'Test' }) */

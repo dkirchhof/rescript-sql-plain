@@ -65,10 +65,6 @@ let eq = (left: 't, right: 't) => Equal(left->Obj.magic, right->Obj.magic)
 /*   } */
 /* } */
 
-let toSQL = expr => 
-  switch expr {
-    | Equal(left, right) => `${left->Obj.magic} = ${right->Obj.magic}`
-}
 
 /* let rec toSQL = (expr, queryToString) => */
 /*   switch expr { */
