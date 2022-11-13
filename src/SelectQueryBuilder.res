@@ -2,6 +2,36 @@ open Index
 
 external toAnyTable: Table.t<_, _> => Table.t<Any.t, Any.t> = "%identity"
 
+type projection<'definition> = {
+  columns: array<string>,
+  definition: 'definition,
+}
+
+let makeProjection: ('row => 'result) => projection<'result> = %raw(`
+  function(cb) {
+    const columns = new Set();
+
+    const proxy = new Proxy({}, {
+      get(_, index) {
+        return new Proxy({}, {
+          get(_, prop) {
+            const column = index + "_" + prop;
+
+            columns.add(column);
+
+            return column;
+          },
+        });
+      },
+    });
+
+    return {
+      columns,
+      definition: cb(proxy),
+    };
+  }
+`)
+
 type joinType = Inner | Left
 
 type join = {
@@ -17,11 +47,11 @@ type t<'columns> = {
   selection: option<Expr.t>,
 }
 
-type executable<'resultset> = {
+type executable<'result> = {
   from: Table.t<Any.t, Any.t>,
   joins: array<join>,
   selection: option<Expr.t>,
-  resultset: 'resultset,
+  projection: projection<'result>,
 }
 
 let from = (table: Table.t<'columns, _>): t<'columns> => {
@@ -74,18 +104,21 @@ let join2 = (qb: t<('c1, 'c2)>, table: Table.t<'columns, _>, joinType, getCondit
   }
 }
 
-let where = (qb: t<_>, getSelection) => {
+let where = (qb, getSelection) => {
   let selection = getSelection(qb.columns)
 
   {...qb, selection: Some(selection)}
 }
 
-let select = (qb: t<'columns>, getProjection): executable<_> => {
-  let resultset = getProjection(qb.columns)
+let select = (qb: t<'columns>, getProjection: 'columns => 'result) => {
+  let projection = makeProjection(getProjection)
 
-  {from: qb.from, joins: qb.joins, selection: qb.selection, resultset}
+  {from: qb.from, joins: qb.joins, selection: qb.selection, projection}
 }
 
+let mapResult = (executable: executable<'result>, rows) => {
+  NestHydrationJs.make()->NestHydrationJs.nestMany(rows, [executable.projection.definition])
+}
 /* let select2 = (qb: t2<'sources>, getColumns) => { */
 /* let columns = getColumns(qb.projectables) */
 
