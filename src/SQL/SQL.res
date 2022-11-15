@@ -29,18 +29,18 @@ open StringBuilder
 
   let expressionToSQL = expr =>
     switch expr {
-    | Expr.Equal(left, right) => `${left->Obj.magic} = ${right->Obj.magic}`
+    | QueryBuilder.Expr.Equal(left, right) => `${left->Obj.magic} = ${right->Obj.magic}`
     }
 
-  let sourceToSQL = (source: SelectQueryBuilder.source) => `${source.name} AS ${source.alias}`
+  let sourceToSQL = (source: QueryBuilder.Select.source) => `${source.name} AS ${source.alias}`
 
-  let joinTypeToSQL = (joinType: SelectQueryBuilder.joinType) =>
+  let joinTypeToSQL = (joinType: QueryBuilder.Select.joinType) =>
     switch joinType {
     | Inner => "INNER JOIN"
     | Left => "LEFT JOIN"
     }
 
-  let joinToSQL = (join: SelectQueryBuilder.join) => {
+  let joinToSQL = (join: QueryBuilder.Select.join) => {
     let joinTypeString = joinTypeToSQL(join.joinType)
     let tableName = join.source.name
     let tableAlias = join.source.alias
@@ -50,7 +50,7 @@ open StringBuilder
   }
 )
 
-let fromCreateTableQuery = (q: CreateTableQueryBuilder.t<_>) => {
+let fromCreateTableQuery = (q: QueryBuilder.CreateTable.t<_>) => {
   let sb2 =
     make()
     ->addM(
@@ -77,7 +77,7 @@ let fromCreateTableQuery = (q: CreateTableQueryBuilder.t<_>) => {
   ->build("\n")
 }
 
-let fromSelectQuery = (q: SelectQueryBuilder.tx<_>) => {
+let fromSelectQuery = (q: QueryBuilder.Select.tx<_>) => {
   let projectionString =
     make()
     ->addM(0, q.projection.columns->Js.Array2.map(column => `${column} AS '${column}'`))

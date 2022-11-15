@@ -140,7 +140,7 @@ module Favorites = {
 }
 
 let createTables = () => {
-  open CreateTableQueryBuilder
+  open QueryBuilder.CreateTable
 
   createTable(Artists.table)->SQL.fromCreateTableQuery->log
   createTable(Albums.table)->SQL.fromCreateTableQuery->log
@@ -150,8 +150,8 @@ let createTables = () => {
 }
 
 let selectNameFromArtist1 = () => {
-  open SelectQueryBuilder
-  open Expr
+  open QueryBuilder.Select
+  open QueryBuilder.Expr
 
   let q =
     from(Artists.table)->where(artist => eq(artist.id, 1))->select(artist => {"name": artist.name})
@@ -166,8 +166,8 @@ let selectNameFromArtist1 = () => {
 }
 
 let selectArtistsWithAlbumsWithSongs = () => {
-  open SelectQueryBuilder
-  open Expr
+  open QueryBuilder.Select
+  open QueryBuilder.Expr
 
   let q =
     from(Artists.table)

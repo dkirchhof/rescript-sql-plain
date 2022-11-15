@@ -8,7 +8,7 @@ type joinType = Inner | Left
 type join = {
   source: source,
   joinType: joinType,
-  on: Expr.t,
+  on: QueryBuilder_Expr.t,
 }
 
 type projection<'definition> = {
@@ -20,13 +20,13 @@ type t<'columns> = {
   from: source,
   joins: array<join>,
   columns: Utils.ItemOrArray.t<Js.Dict.t<string>>,
-  selection: option<Expr.t>,
+  selection: option<QueryBuilder_Expr.t>,
 }
 
 type tx<'result> = {
   from: source,
   joins: array<join>,
-  selection: option<Expr.t>,
+  selection: option<QueryBuilder_Expr.t>,
   projection: projection<'result>,
 }
 
@@ -69,7 +69,7 @@ let join1 = (
   q: t<'c1>,
   table: Schema.Table.t<'columns, _>,
   joinType,
-  getCondition: (('c1, 'columns)) => Expr.t,
+  getCondition: (('c1, 'columns)) => QueryBuilder_Expr.t,
 ): t<('c1, 'columns)> => {
   join(q, table, joinType, getCondition, "b")
 }
@@ -78,12 +78,12 @@ let join2 = (
   q: t<('c1, 'c2)>,
   table: Schema.Table.t<'columns, _>,
   joinType,
-  getCondition: (('c1, 'c2, 'columns)) => Expr.t,
+  getCondition: (('c1, 'c2, 'columns)) => QueryBuilder_Expr.t,
 ): t<('c1, 'c2, 'columns)> => {
   join(q, table, joinType, getCondition, "c")
 }
 
-let where = (q: t<'columns>, getSelection: 'columns => Expr.t): t<'columns> => {
+let where = (q: t<'columns>, getSelection: 'columns => QueryBuilder_Expr.t): t<'columns> => {
   let selection = Utils.ItemOrArray.apply(q.columns, getSelection)
 
   {...q, selection: Some(selection)}
