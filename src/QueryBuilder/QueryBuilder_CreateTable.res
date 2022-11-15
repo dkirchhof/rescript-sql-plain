@@ -1,4 +1,4 @@
-type t<'a, 'b> = {table: Schema.Table.t<'a, 'b>}
+type t<'columns, 'constraints> = {table: Schema.Table.t<'columns, 'constraints>}
 
 let createTable = table => {
   table: table,

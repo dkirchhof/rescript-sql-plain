@@ -90,3 +90,30 @@ let fromSelectQuery = (q: QueryBuilder.Select.tx<_>) => {
   ->addSO(0, q.selection->Belt.Option.map(expr => `WHERE ${expressionToSQL(expr)}`))
   ->build("\n")
 }
+
+%%private(
+  let rowToValues = (row, column) => row->Obj.magic->Js.Dict.unsafeGet(column)->Utils.sanitizeValue
+
+  let rowToValuesString = (columns, row) =>
+    `(${columns->Js.Array2.map(rowToValues(row))->Js.Array2.joinWith(", ")})`
+)
+
+let fromInsertIntoQuery = (q: QueryBuilder.InsertInto.tx<_>) => {
+  let columns =
+    q.values[0]
+    ->Obj.magic
+    ->Js.Dict.entries
+    ->Js.Array2.filter(entry => snd(entry) !== Js.undefined)
+    ->Js.Array2.map(fst)
+
+  let columnsString = columns->Js.Array2.joinWith(", ")
+
+  let valuesString =
+    make()->addM(2, q.values->Js.Array2.map(rowToValuesString(columns)))->build(",\n")
+
+  make()
+  ->addS(0, `INSERT INTO ${q.table.name} (${columnsString})`)
+  ->addS(0, `VALUES`)
+  ->addS(0, valuesString)
+  ->build("\n")
+}
