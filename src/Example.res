@@ -304,6 +304,21 @@ let insertData = () => {
   ->log
 }
 
+let updateData = () => {
+  open QueryBuilder
+  open QueryBuilder.Update
+  open QueryBuilder.Expr
+
+  update(Artists.table)
+  ->set({
+    id: skip,
+    name: "DELETEME",
+  })
+  ->where(c => eq(c.id, 1))
+  ->SQL.fromUpdateQuery
+  ->log
+}
+
 let selectNameFromArtist1 = () => {
   open QueryBuilder.Select
   open QueryBuilder.Expr
@@ -358,5 +373,6 @@ let selectArtistsWithAlbumsWithSongs = () => {
 
 createTables()
 insertData()
+updateData()
 /* selectNameFromArtist1() */
 /* selectArtistsWithAlbumsWithSongs() */

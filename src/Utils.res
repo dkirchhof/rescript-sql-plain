@@ -49,8 +49,8 @@ module ItemOrArray = {
 
 let sanitizeValue = value => {
   if Js.Types.test(value, Js.Types.String) {
-    `'${value}'`
+    `'${value->Obj.magic}'`
   } else {
-    value
+    value->Obj.magic
   }
 }

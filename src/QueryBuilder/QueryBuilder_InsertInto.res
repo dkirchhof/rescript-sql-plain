@@ -1,19 +1,15 @@
-type t<'columns, 'defaults, 'constraints> = {table: Schema.Table.t<'columns, 'constraints>}
+type t<'columns> = {table: string}
 
-type tx<'columns, 'constraints> = {
-  table: Schema.Table.t<'columns, 'constraints>,
+type tx<'columns> = {
+  table: string,
   values: array<'columns>,
 }
 
-let skip = Obj.magic
-
-let insertInto = table => {
-  table: table,
+let insertInto = (table: Schema.Table.t<'columns, _>): t<'columns> => {
+  table: table.name,
 }
 
-let values = (q: t<_, 'defaults, _>, values) => {
-  {
-    table: q.table,
-    values: values,
-  }
+let values = (q: t<'columns>, values: array<'columns>) => {
+  table: q.table,
+  values,
 }

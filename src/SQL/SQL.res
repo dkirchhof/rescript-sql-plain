@@ -112,8 +112,24 @@ let fromInsertIntoQuery = (q: QueryBuilder.InsertInto.tx<_>) => {
     make()->addM(2, q.values->Js.Array2.map(rowToValuesString(columns)))->build(",\n")
 
   make()
-  ->addS(0, `INSERT INTO ${q.table.name} (${columnsString})`)
+  ->addS(0, `INSERT INTO ${q.table} (${columnsString})`)
   ->addS(0, `VALUES`)
   ->addS(0, valuesString)
+  ->build("\n")
+}
+
+let fromUpdateQuery = (q: QueryBuilder.Update.tx<_>) => {
+  let patchString =
+    q.patch
+    ->Obj.magic
+    ->Js.Dict.entries
+    ->Js.Array2.filter(entry => snd(entry) !== Js.undefined)
+    ->Js.Array2.map(entry => `${fst(entry)} = ${entry->snd->Utils.sanitizeValue}`)
+    ->Js.Array2.joinWith(", ")
+
+  make()
+  ->addS(0, `UPDATE ${q.table}`)
+  ->addS(0, `SET ${patchString}`)
+  ->addSO(0, q.selection->Belt.Option.map(expr => `WHERE ${expressionToSQL(expr)}`))
   ->build("\n")
 }
