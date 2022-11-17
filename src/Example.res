@@ -150,7 +150,7 @@ let createTables = () => {
 }
 
 let insertData = () => {
-  open QueryBuilder.InsertInto
+  open QueryBuilder.Insert
 
   insertInto(Artists.table)
   ->values([
@@ -314,9 +314,16 @@ let updateData = () => {
     id: skip,
     name: "DELETEME",
   })
-  ->where(c => eq(c.id, 1))
+  ->where(c => eq(c.id, 5))
   ->SQL.fromUpdateQuery
   ->log
+}
+
+let deleteData = () => {
+  open QueryBuilder.Delete
+  open QueryBuilder.Expr
+
+  deleteFrom(Artists.table)->where(c => eq(c.name, "DELETEME"))->SQL.fromDeleteQuery->log
 }
 
 let selectNameFromArtist1 = () => {
@@ -374,5 +381,6 @@ let selectArtistsWithAlbumsWithSongs = () => {
 createTables()
 insertData()
 updateData()
+deleteData()
 /* selectNameFromArtist1() */
 /* selectArtistsWithAlbumsWithSongs() */
