@@ -1,16 +1,16 @@
 open StringBuilder
 
 %%private(
-  let refToSQL = ref => {
-    switch ref {
-    | QueryBuilder.Ref.Undefined => Js.Exn.raiseError("Ref has type Undefined")
-    | QueryBuilder.Ref.NumericLiteral(value) => value->Belt.Float.toString
-    | QueryBuilder.Ref.StringLiteral(value) => `'${value->Utils.replaceAll("'", "''")}'`
-    | QueryBuilder.Ref.Column(options) =>
+  let anyToSQL = value => {
+    switch value {
+    | Any.Number(value) => value->Belt.Float.toString
+    | Any.String(value) => `'${value->Utils.replaceAll("'", "''")}'`
+    | Any.Column(options) =>
       switch options.tableAlias {
       | Some(tableAlias) => `${tableAlias}.${options.columnName}`
       | None => options.columnName
       }
+    | Any.Skip | Any.Obj(_) | Any.Array(_) => Js.Exn.raiseError("Value has type Undefined")
     }
   }
 
@@ -42,7 +42,7 @@ open StringBuilder
 
   let expressionToSQL = expr =>
     switch expr {
-    | QueryBuilder.Expr.Equal(left, right) => `${left->refToSQL} = ${right->refToSQL}`
+    | QueryBuilder.Expr.Equal(left, right) => `${left->anyToSQL} = ${right->anyToSQL}`
     }
 
   let sourceToSQL = (source: QueryBuilder.Select.source) => `${source.name} AS ${source.alias}`
@@ -97,7 +97,7 @@ let fromSelectQuery = (q: QueryBuilder.Select.tx<_>) => {
       0,
       q.projection.refs
       ->Js.Dict.entries
-      ->Js.Array2.map(((alias, ref)) => `${ref->refToSQL} AS '${alias}'`),
+      ->Js.Array2.map(((alias, value)) => `${value->anyToSQL} AS '${alias}'`),
     )
     ->build(", ")
 
@@ -110,7 +110,7 @@ let fromSelectQuery = (q: QueryBuilder.Select.tx<_>) => {
 }
 
 %%private(
-  let rowToValues = (row, column) => row->Obj.magic->Js.Dict.unsafeGet(column)->refToSQL
+  let rowToValues = (row, column) => row->Obj.magic->Js.Dict.unsafeGet(column)->anyToSQL
 
   let rowToValuesString = (columns, row) =>
     `(${columns->Js.Array2.map(rowToValues(row))->Js.Array2.joinWith(", ")})`
@@ -121,7 +121,7 @@ let fromInsertIntoQuery = (q: QueryBuilder.Insert.tx<_>) => {
     q.values[0]
     ->Obj.magic
     ->Js.Dict.entries
-    ->Js.Array2.filter(entry => snd(entry) !== QueryBuilder.Ref.Undefined)
+    ->Js.Array2.filter(((_, value)) => value !== Any.Skip)
     ->Js.Array2.map(fst)
 
   let columnsString = columns->Js.Array2.joinWith(", ")
@@ -141,8 +141,8 @@ let fromUpdateQuery = (q: QueryBuilder.Update.tx<_>) => {
     q.patch
     ->Obj.magic
     ->Js.Dict.entries
-    ->Js.Array2.filter(entry => snd(entry) !== QueryBuilder.Ref.Undefined)
-    ->Js.Array2.map(entry => `${fst(entry)} = ${entry->snd->refToSQL}`)
+    ->Js.Array2.filter(((_, value)) => value !== Any.Skip)
+    ->Js.Array2.map(((column, value)) => `${column} = ${anyToSQL(value)}`)
     ->Js.Array2.joinWith(", ")
 
   make()

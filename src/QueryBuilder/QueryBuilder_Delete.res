@@ -1,12 +1,12 @@
 type t<'columns> = {
   table: string,
-  columns: Js.Dict.t<QueryBuilder_Ref.t>,
+  columns: Js.Dict.t<Any.t>,
   selection: option<QueryBuilder_Expr.t>,
 }
 
 let deleteFrom = (table: Schema.Table.t<'columns, _>): t<'columns> => {
   table: table.name,
-  columns: Utils.columnsToRefsDict(table.columns, None),
+  columns: Utils.columnsToAnyDict(table.columns, None),
   selection: None,
 }
 

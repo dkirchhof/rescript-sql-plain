@@ -1,25 +1,27 @@
-type t =
-  | Undefined
-  | NumericLiteral(float)
-  | StringLiteral(string)
-  | Column({columnName: string, tableAlias: option<string>})
+/* type t = */
+/*   | Undefined */
+/*   | NumericLiteral(float) */
+/*   | StringLiteral(string) */
+/*   | Column({columnName: string, tableAlias: option<string>}) */
 
-let isRef: 'a => bool = %raw(`
-  function(obj) {
-    return obj.TAG !== undefined;
-  }
-`)
+/* let make = value => { */
+/*   let x = Any.make(value) */
 
-let make = value => {
-  let any = value->Obj.magic
+/*   switch x { */
+/*   | Undefined => Undefined */
+/*   | Number(value) => NumericLiteral(value) */
+/*   | String(value) => StringLiteral(value) */
+/*   | Ref(value) => value->Obj.magic */
+/*   | _ => Js.Exn.raiseError("Can't make ref from this type.") */
+/*   } */
+/* } */
 
-  if Js.Types.test(any, Js.Types.Number) {
-    NumericLiteral(any)
-  } else if Js.Types.test(any, Js.Types.String) {
-    StringLiteral(any)
-  } else if isRef(any) {
-    any
-  } else {
-    Js.Exn.raiseError("Can't make a ref from this value.")
-  }
-}
+/* let makeFromAnyType = (value: Any.t) => { */
+/*   switch value { */
+/*   | Undefined => Undefined */
+/*   | Number(value) => NumericLiteral(value) */
+/*   | String(value) => StringLiteral(value) */
+/*   | Ref(value) => value->Obj.magic */
+/*   | _ => Js.Exn.raiseError("Can't make ref from this type.") */
+/*   } */
+/* } */

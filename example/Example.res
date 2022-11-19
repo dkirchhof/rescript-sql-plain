@@ -401,7 +401,6 @@ let selectArtistsWithAlbumsWithSongs = () => {
           {
             "id": album.id,
             "name": album.name,
-            "artist": {"id": artist.id, "name": artist.name},
             "songs": [
               {
                 "id": song.id,

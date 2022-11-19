@@ -5,7 +5,7 @@
   "license": "MIT",
   "scripts": {
     "dev": "rescript build -w",
-    "example": "node example/Example.bs.mjs"
+    "example": "node --watch example/Example.bs.mjs"
   },
   "devDependencies": {
     "rescript": "^10.1.0-rc.2"

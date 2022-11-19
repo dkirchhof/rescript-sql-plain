@@ -11,20 +11,15 @@ type join = {
   on: QueryBuilder_Expr.t,
 }
 
-type projectionRef = {
-  ref: QueryBuilder_Ref.t,
-  alias: string,
-}
-
 type projection<'definition> = {
-  refs: Js.Dict.t<QueryBuilder_Ref.t>,
+  refs: Js.Dict.t<Any.t>,
   definition: 'definition,
 }
 
 type t<'columns> = {
   from: source,
   joins: array<join>,
-  columns: Utils.ItemOrArray.t<Js.Dict.t<QueryBuilder_Ref.t>>,
+  columns: Utils.ItemOrArray.t<Js.Dict.t<Any.t>>,
   selection: option<QueryBuilder_Expr.t>,
 }
 
@@ -39,7 +34,7 @@ type tx<'result> = {
   let join = (q, table: Schema.Table.t<_>, joinType, getCondition, alias) => {
     let newColumns = Utils.ItemOrArray.concat(
       q.columns,
-      [Utils.columnsToRefsDict(table.columns, Some(alias))],
+      [Utils.columnsToAnyDict(table.columns, Some(alias))],
     )
 
     let join: join = {
@@ -61,7 +56,7 @@ type tx<'result> = {
 let from = (table: Schema.Table.t<'columns, _>): t<'columns> => {
   from: {name: table.name, alias: "t1"},
   joins: [],
-  columns: Item(Utils.columnsToRefsDict(table.columns, Some("t1"))),
+  columns: Item(Utils.columnsToAnyDict(table.columns, Some("t1"))),
   selection: None,
 }
 
@@ -90,7 +85,7 @@ let where = (q: t<'columns>, getSelection: 'columns => QueryBuilder_Expr.t): t<'
 }
 
 let select = (q: t<'columns>, getProjection: 'columns => 'result) => {
-  let obj = Utils.ItemOrArray.apply(q.columns, getProjection)
+  let obj = Utils.ItemOrArray.apply(q.columns, getProjection)->Obj.magic
 
   let counter = ref(0)
   let refs = Js.Dict.empty()
@@ -100,27 +95,26 @@ let select = (q: t<'columns>, getProjection: 'columns => 'result) => {
     ->Obj.magic
     ->Js.Dict.entries
     ->Js.Array2.map(((key, value)) => {
-      if Js.Array2.isArray(value) {
-        (key, [objToDefinition(value[0]->Obj.magic)]->Obj.magic)
-      } else if Js.Types.test(value, Js.Types.Object) && !QueryBuilder_Ref.isRef(value) {
-        (key, objToDefinition(value->Obj.magic)->Obj.magic)
-      } else {
-        counter.contents = counter.contents + 1
+      let value = Any.make(value)
 
-        let alias = `c${counter.contents->Belt.Int.toString}`
+      switch value {
+      | Array(value) => (key, [objToDefinition(value[0])]->Obj.magic)
+      | Obj(value) => (key, objToDefinition(value)->Obj.magic)
+      | _ => {
+          counter.contents = counter.contents + 1
 
-        Js.Dict.set(refs, alias, QueryBuilder_Ref.make(value))
+          let alias = `c${counter.contents->Belt.Int.toString}`
 
-        (key, alias)
+          Js.Dict.set(refs, alias, value)
+
+          (key, alias)
+        }
       }
     })
     ->Js.Dict.fromArray
   }
 
   let definition = objToDefinition(obj)
-
-  Js.log(definition)
-  Js.log(refs)
 
   {from: q.from, joins: q.joins, selection: q.selection, projection: {definition, refs}}
 }

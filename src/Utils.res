@@ -1,5 +1,3 @@
-external objToDictUnsafe: 'a => Js.Dict.t<'b> = "%identity"
-
 @send external replaceAll: (string, string, string) => string = "replaceAll"
 
 let ensureArray: 'a => array<'a> = %raw(`
@@ -29,24 +27,25 @@ module ItemOrArray = {
     }
 }
 
-let columnsToRefsDict = (columns, tableAlias) => {
+let columnsToAnyDict = (columns, tableAlias) => {
   columns
-  ->objToDictUnsafe
+  ->Obj.magic
   ->Js.Dict.keys
-  ->Js.Array2.map(columnName => (columnName, QueryBuilder_Ref.Column({columnName, tableAlias})))
+  ->Js.Array2.map(columnName => (columnName, Any.Column({tableAlias, columnName})))
   ->Js.Dict.fromArray
 }
 
 let objToRefsDict = obj => {
   obj
-  ->objToDictUnsafe
+  ->Obj.magic
   ->Js.Dict.entries
-  ->Belt.Array.keepMap(((column, value)) =>
-    if value === Js.undefined {
-      None
-    } else {
-      Some((column, QueryBuilder_Ref.make(value)))
+  ->Belt.Array.keepMap(((column, value)) => {
+    let value = Any.make(value)
+    
+    switch value {
+      | Skip => None
+      | _=> Some(column, value)
     }
-  )
+  })
   ->Js.Dict.fromArray
 }
