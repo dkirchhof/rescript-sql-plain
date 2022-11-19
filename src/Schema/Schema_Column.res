@@ -5,6 +5,8 @@ type t = {
   size: int,
 }
 
+external toColumnUnsafe: 'a => t = "%identity"
+
 type options = {size: int}
 
 let varchar = (options): string => {

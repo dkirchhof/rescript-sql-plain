@@ -2,7 +2,7 @@ type t<'columns> = {table: string}
 
 type tx<'columns> = {
   table: string,
-  values: array<'columns>,
+  values: array<Js.Dict.t<QueryBuilder_Ref.t>>,
 }
 
 let insertInto = (table: Schema.Table.t<'columns, _>): t<'columns> => {
@@ -10,6 +10,10 @@ let insertInto = (table: Schema.Table.t<'columns, _>): t<'columns> => {
 }
 
 let values = (q: t<'columns>, values: array<'columns>) => {
-  table: q.table,
-  values,
+  let values' = values->Js.Array2.map(Utils.objToRefsDict)
+
+  {
+    table: q.table,
+    values: values',
+  }
 }

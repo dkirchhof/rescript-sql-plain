@@ -11,15 +11,20 @@ type join = {
   on: QueryBuilder_Expr.t,
 }
 
+type projectionRef = {
+  ref: QueryBuilder_Ref.t,
+  alias: string,
+}
+
 type projection<'definition> = {
-  columns: array<string>,
+  refs: Js.Dict.t<QueryBuilder_Ref.t>,
   definition: 'definition,
 }
 
 type t<'columns> = {
   from: source,
   joins: array<join>,
-  columns: Utils.ItemOrArray.t<Js.Dict.t<string>>,
+  columns: Utils.ItemOrArray.t<Js.Dict.t<QueryBuilder_Ref.t>>,
   selection: option<QueryBuilder_Expr.t>,
 }
 
@@ -31,16 +36,11 @@ type tx<'result> = {
 }
 
 %%private(
-  let mapColumns = (columns, alias) => {
-    columns
-    ->Obj.magic
-    ->Js.Dict.keys
-    ->Js.Array2.map(column => (column, `${alias}.${column}`))
-    ->Js.Dict.fromArray
-  }
-
   let join = (q, table: Schema.Table.t<_>, joinType, getCondition, alias) => {
-    let newColumns = Utils.ItemOrArray.concat(q.columns, [mapColumns(table.columns, alias)])
+    let newColumns = Utils.ItemOrArray.concat(
+      q.columns,
+      [Utils.columnsToRefsDict(table.columns, Some(alias))],
+    )
 
     let join: join = {
       source: {name: table.name, alias},
@@ -59,9 +59,9 @@ type tx<'result> = {
 )
 
 let from = (table: Schema.Table.t<'columns, _>): t<'columns> => {
-  from: {name: table.name, alias: "a"},
+  from: {name: table.name, alias: "t1"},
   joins: [],
-  columns: Item(mapColumns(table.columns, "a")),
+  columns: Item(Utils.columnsToRefsDict(table.columns, Some("t1"))),
   selection: None,
 }
 
@@ -71,7 +71,7 @@ let join1 = (
   joinType,
   getCondition: (('c1, 'columns)) => QueryBuilder_Expr.t,
 ): t<('c1, 'columns)> => {
-  join(q, table, joinType, getCondition, "b")
+  join(q, table, joinType, getCondition, "t2")
 }
 
 let join2 = (
@@ -80,7 +80,7 @@ let join2 = (
   joinType,
   getCondition: (('c1, 'c2, 'columns)) => QueryBuilder_Expr.t,
 ): t<('c1, 'c2, 'columns)> => {
-  join(q, table, joinType, getCondition, "c")
+  join(q, table, joinType, getCondition, "t3")
 }
 
 let where = (q: t<'columns>, getSelection: 'columns => QueryBuilder_Expr.t): t<'columns> => {
@@ -90,10 +90,39 @@ let where = (q: t<'columns>, getSelection: 'columns => QueryBuilder_Expr.t): t<'
 }
 
 let select = (q: t<'columns>, getProjection: 'columns => 'result) => {
-  let definition = Utils.ItemOrArray.apply(q.columns, getProjection)
-  let columns = Utils.getStringValuesRec(definition)
+  let obj = Utils.ItemOrArray.apply(q.columns, getProjection)
 
-  {from: q.from, joins: q.joins, selection: q.selection, projection: {definition, columns}}
+  let counter = ref(0)
+  let refs = Js.Dict.empty()
+
+  let rec objToDefinition = obj => {
+    obj
+    ->Obj.magic
+    ->Js.Dict.entries
+    ->Js.Array2.map(((key, value)) => {
+      if Js.Array2.isArray(value) {
+        (key, [objToDefinition(value[0]->Obj.magic)]->Obj.magic)
+      } else if Js.Types.test(value, Js.Types.Object) && !QueryBuilder_Ref.isRef(value) {
+        (key, objToDefinition(value->Obj.magic)->Obj.magic)
+      } else {
+        counter.contents = counter.contents + 1
+
+        let alias = `c${counter.contents->Belt.Int.toString}`
+
+        Js.Dict.set(refs, alias, QueryBuilder_Ref.make(value))
+
+        (key, alias)
+      }
+    })
+    ->Js.Dict.fromArray
+  }
+
+  let definition = objToDefinition(obj)
+
+  Js.log(definition)
+  Js.log(refs)
+
+  {from: q.from, joins: q.joins, selection: q.selection, projection: {definition, refs}}
 }
 
 let mapOne = (q: tx<'result>, row) => {

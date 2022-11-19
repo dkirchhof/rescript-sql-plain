@@ -1,34 +1,24 @@
 type t<'columns> = {
   table: string,
-  columns: Js.Dict.t<string>,
+  columns: Js.Dict.t<QueryBuilder_Ref.t>,
 }
 
 type tx<'columns> = {
   table: string,
-  columns: Js.Dict.t<string>,
-  patch: 'columns,
+  columns: Js.Dict.t<QueryBuilder_Ref.t>,
+  patch: Js.Dict.t<QueryBuilder_Ref.t>,
   selection: option<QueryBuilder_Expr.t>,
 }
 
-%%private(
-  let mapColumns = columns => {
-    columns
-    ->Obj.magic
-    ->Js.Dict.keys
-    ->Js.Array2.map(column => (column, column))
-    ->Js.Dict.fromArray
-  }
-)
-
 let update = (table: Schema.Table.t<'columns, _>): t<'columns> => {
   table: table.name,
-  columns: mapColumns(table.columns),
+  columns: Utils.columnsToRefsDict(table.columns, None),
 }
 
-let set = (q: t<'columns>, patch: 'columns) => {
+let set = (q: t<'columns>, patch: 'columns): tx<'columns> => {
   table: q.table,
   columns: q.columns,
-  patch,
+  patch: Utils.objToRefsDict(patch),
   selection: None,
 }
 

@@ -1,6 +1,19 @@
 open StringBuilder
 
 %%private(
+  let refToSQL = ref => {
+    switch ref {
+    | QueryBuilder.Ref.Undefined => Js.Exn.raiseError("Ref has type Undefined")
+    | QueryBuilder.Ref.NumericLiteral(value) => value->Belt.Float.toString
+    | QueryBuilder.Ref.StringLiteral(value) => `'${value->Utils.replaceAll("'", "''")}'`
+    | QueryBuilder.Ref.Column(options) =>
+      switch options.tableAlias {
+      | Some(tableAlias) => `${tableAlias}.${options.columnName}`
+      | None => options.columnName
+      }
+    }
+  }
+
   let fkStrategyToSQL = s =>
     switch s {
     | Schema.Constraint.FKStrategy.Cascade => "CASCADE"
@@ -29,7 +42,7 @@ open StringBuilder
 
   let expressionToSQL = expr =>
     switch expr {
-    | QueryBuilder.Expr.Equal(left, right) => `${left->Obj.magic} = ${right->Obj.magic}`
+    | QueryBuilder.Expr.Equal(left, right) => `${left->refToSQL} = ${right->refToSQL}`
     }
 
   let sourceToSQL = (source: QueryBuilder.Select.source) => `${source.name} AS ${source.alias}`
@@ -80,7 +93,12 @@ let fromCreateTableQuery = (q: QueryBuilder.CreateTable.t<_>) => {
 let fromSelectQuery = (q: QueryBuilder.Select.tx<_>) => {
   let projectionString =
     make()
-    ->addM(0, q.projection.columns->Js.Array2.map(column => `${column} AS '${column}'`))
+    ->addM(
+      0,
+      q.projection.refs
+      ->Js.Dict.entries
+      ->Js.Array2.map(((alias, ref)) => `${ref->refToSQL} AS '${alias}'`),
+    )
     ->build(", ")
 
   make()
@@ -92,7 +110,7 @@ let fromSelectQuery = (q: QueryBuilder.Select.tx<_>) => {
 }
 
 %%private(
-  let rowToValues = (row, column) => row->Obj.magic->Js.Dict.unsafeGet(column)->Utils.sanitizeValue
+  let rowToValues = (row, column) => row->Obj.magic->Js.Dict.unsafeGet(column)->refToSQL
 
   let rowToValuesString = (columns, row) =>
     `(${columns->Js.Array2.map(rowToValues(row))->Js.Array2.joinWith(", ")})`
@@ -103,7 +121,7 @@ let fromInsertIntoQuery = (q: QueryBuilder.Insert.tx<_>) => {
     q.values[0]
     ->Obj.magic
     ->Js.Dict.entries
-    ->Js.Array2.filter(entry => snd(entry) !== Js.undefined)
+    ->Js.Array2.filter(entry => snd(entry) !== QueryBuilder.Ref.Undefined)
     ->Js.Array2.map(fst)
 
   let columnsString = columns->Js.Array2.joinWith(", ")
@@ -123,20 +141,20 @@ let fromUpdateQuery = (q: QueryBuilder.Update.tx<_>) => {
     q.patch
     ->Obj.magic
     ->Js.Dict.entries
-    ->Js.Array2.filter(entry => snd(entry) !== Js.undefined)
-    ->Js.Array2.map(entry => `${fst(entry)} = ${entry->snd->Utils.sanitizeValue}`)
+    ->Js.Array2.filter(entry => snd(entry) !== QueryBuilder.Ref.Undefined)
+    ->Js.Array2.map(entry => `${fst(entry)} = ${entry->snd->refToSQL}`)
     ->Js.Array2.joinWith(", ")
 
   make()
   ->addS(0, `UPDATE ${q.table}`)
-  ->addS(0, `SET ${patchString}`)
-  ->addSO(0, q.selection->Belt.Option.map(expr => `WHERE ${expressionToSQL(expr)}`))
+  ->addS(2, `SET ${patchString}`)
+  ->addSO(2, q.selection->Belt.Option.map(expr => `WHERE ${expressionToSQL(expr)}`))
   ->build("\n")
 }
 
 let fromDeleteQuery = (q: QueryBuilder.Delete.t<_>) => {
   make()
   ->addS(0, `DELETE FROM ${q.table}`)
-  ->addSO(0, q.selection->Belt.Option.map(expr => `WHERE ${expressionToSQL(expr)}`))
+  ->addSO(2, q.selection->Belt.Option.map(expr => `WHERE ${expressionToSQL(expr)}`))
   ->build("\n")
 }

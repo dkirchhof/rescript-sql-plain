@@ -1,4 +1,5 @@
 module Expr = QueryBuilder_Expr
+module Ref = QueryBuilder_Ref
 
 module CreateTable = QueryBuilder_CreateTable
 module Delete = QueryBuilder_Delete

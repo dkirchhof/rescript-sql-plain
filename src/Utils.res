@@ -1,4 +1,8 @@
-let ensureArray: array<'a> => array<'a> = %raw(`
+external objToDictUnsafe: 'a => Js.Dict.t<'b> = "%identity"
+
+@send external replaceAll: (string, string, string) => string = "replaceAll"
+
+let ensureArray: 'a => array<'a> = %raw(`
   function(maybeArray) {
     if (Array.isArray(maybeArray)) {
       return maybeArray;
@@ -8,35 +12,13 @@ let ensureArray: array<'a> => array<'a> = %raw(`
   }
 `)
 
-let getStringValuesRec: 'a => array<string> = %raw(`
-  function(obj) {
-    const values = new Set();
-
-    const rec = current => {
-      Object.values(current).forEach(value => {
-        if (typeof value === "string") {
-          values.add(value);
-        } else if (Array.isArray(value)) {
-          value.forEach(rec);
-        } else if (typeof value === "object") {
-          rec(value);
-        }
-      })
-    }
-
-    rec(obj);
-
-    return Array.from(values).sort();
-  }
-`)
-
 module ItemOrArray = {
   type t<'t> = Item('t) | Array(array<'t>)
 
   let concat = (t, newArray) => {
     switch t {
-      | Item(item) => Js.Array2.concat([item], newArray)->Array
-      | Array(oldArray) => Js.Array2.concat(oldArray, newArray)->Array
+    | Item(item) => Js.Array2.concat([item], newArray)->Array
+    | Array(oldArray) => Js.Array2.concat(oldArray, newArray)->Array
     }
   }
 
@@ -47,10 +29,24 @@ module ItemOrArray = {
     }
 }
 
-let sanitizeValue = value => {
-  if Js.Types.test(value, Js.Types.String) {
-    `'${value->Obj.magic}'`
-  } else {
-    value->Obj.magic
-  }
+let columnsToRefsDict = (columns, tableAlias) => {
+  columns
+  ->objToDictUnsafe
+  ->Js.Dict.keys
+  ->Js.Array2.map(columnName => (columnName, QueryBuilder_Ref.Column({columnName, tableAlias})))
+  ->Js.Dict.fromArray
+}
+
+let objToRefsDict = obj => {
+  obj
+  ->objToDictUnsafe
+  ->Js.Dict.entries
+  ->Belt.Array.keepMap(((column, value)) =>
+    if value === Js.undefined {
+      None
+    } else {
+      Some((column, QueryBuilder_Ref.make(value)))
+    }
+  )
+  ->Js.Dict.fromArray
 }

@@ -1,7 +1,9 @@
+module Ref = QueryBuilder_Ref
+
 type rec t =
   /* | And(array<t>) */
   /* | Or(array<t>) */
-  | Equal(Any.t, Any.t)
+  | Equal(Ref.t, Ref.t)
   /* | NotEqual(Ref.anyRef, Ref.anyRef) */
   /* | GreaterThan(Ref.anyRef, Ref.anyRef) */
   /* | GreaterThanEqual(Ref.anyRef, Ref.anyRef) */
@@ -15,7 +17,7 @@ type rec t =
 /* let and_ = ands => And(ands) */
 /* let or_ = ors => Or(ors) */
 
-let eq = (left: 't, right: 't) => Equal(left->Obj.magic, right->Obj.magic)
+let eq = (left: 't, right: 't) => Equal(left->Ref.make, right->Ref.make)
 /* let \"==" = eq */
 
 /* let neq = (left, right) => NotEqual(Ref.toAnyRef(left), Ref.toAnyRef(right)) */
