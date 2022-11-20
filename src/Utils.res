@@ -28,7 +28,6 @@ module ItemOrArray = {
 }
 
 let columnsToAnyDict = (columns, tableAlias) => {
-  Js.log(columns)
   columns
   ->Obj.magic
   ->Js.Dict.values

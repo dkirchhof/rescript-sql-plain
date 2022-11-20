@@ -134,7 +134,6 @@ let select = (q: t<'columns>, getProjection: 'columns => 'result): tx<'result> =
   }
 
   let definition = objToDefinition(obj)
-  Js.log(definition)
 
   {from: q.from, joins: q.joins, selection: q.selection, projection: {definition, refs}}
 }
