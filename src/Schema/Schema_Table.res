@@ -9,7 +9,7 @@ let make = (name, columns: 'a, makeConstraints: 'a => 'b) => {
     columns
     ->Obj.magic
     ->Js.Dict.entries
-    ->Js.Array2.map(((columnName, column: Schema_Column.t)) => (
+    ->Js.Array2.map(((columnName, column: Schema_Column.t<Any.t, Any.t>)) => (
       columnName,
       {...column, table: name, name: columnName},
     ))

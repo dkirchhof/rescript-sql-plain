@@ -3,17 +3,17 @@ module FKStrategy = {
 }
 
 type t =
-  | PrimaryKey(array<Schema_Column.t>)
-  | ForeignKey(Schema_Column.t, Schema_Column.t, FKStrategy.t, FKStrategy.t)
+  | PrimaryKey(array<Schema_Column.t<Any.t, Any.t>>)
+  | ForeignKey(Schema_Column.t<Any.t, Any.t>, Schema_Column.t<Any.t, Any.t>, FKStrategy.t, FKStrategy.t)
 
 let primaryKey = columns => {
-  columns->Schema_Column.toColumnUnsafe->Utils.ensureArray->PrimaryKey
+  columns->Obj.magic->Utils.ensureArray->PrimaryKey
 }
 
 let foreignKey = (~ownColumn: 'a, ~foreignColumn: 'a, ~onUpdate, ~onDelete) => {
   ForeignKey(
-    ownColumn->Schema_Column.toColumnUnsafe,
-    foreignColumn->Schema_Column.toColumnUnsafe,
+    ownColumn->Obj.magic,
+    foreignColumn->Obj.magic,
     onUpdate,
     onDelete,
   )

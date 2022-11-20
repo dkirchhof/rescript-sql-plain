@@ -5,6 +5,7 @@ open StringBuilder
     switch value {
     | Any.Number(value) => value->Belt.Float.toString
     | Any.String(value) => `'${value->Utils.replaceAll("'", "''")}'`
+    | Any.Date(value) => `'${value->Js.Date.toISOString}'`
     | Any.Column(options) =>
       switch options.tableAlias {
       | Some(tableAlias) => `${tableAlias}.${options.columnName}`
@@ -71,7 +72,7 @@ let fromCreateTableQuery = (q: QueryBuilder.CreateTable.t<_>) => {
       q.table.columns
       ->Obj.magic
       ->Js.Dict.entries
-      ->Js.Array2.map(((name: string, column: Schema.Column.t)) =>
+      ->Js.Array2.map(((name: string, column: Schema.Column.t<Any.t, Any.t>)) =>
         switch column.size {
         | Some(size) => `${name} ${(column.dbType :> string)}(${size->Belt.Int.toString}) NOT NULL`
         | None => `${name} ${(column.dbType :> string)} NOT NULL`

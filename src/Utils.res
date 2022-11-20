@@ -28,10 +28,11 @@ module ItemOrArray = {
 }
 
 let columnsToAnyDict = (columns, tableAlias) => {
+  Js.log(columns)
   columns
   ->Obj.magic
-  ->Js.Dict.keys
-  ->Js.Array2.map(columnName => (columnName, Any.Column({tableAlias, columnName, converter: None})))
+  ->Js.Dict.values
+  ->Js.Array2.map((column: Schema_Column.t<_>) => (column.name, Any.makeColumn(tableAlias, column.name, column.converter)))
   ->Js.Dict.fromArray
 }
 

@@ -78,6 +78,15 @@ let join2 = (
   join(q, table, joinType, getCondition, "t3")
 }
 
+let join3 = (
+  q: t<('c1, 'c2, 'c3)>,
+  table: Schema.Table.t<'columns, _>,
+  joinType,
+  getCondition: (('c1, 'c2, 'c3, 'columns)) => QueryBuilder_Expr.t,
+): t<('c1, 'c2, 'c3, 'columns)> => {
+  join(q, table, joinType, getCondition, "t4")
+}
+
 let where = (q: t<'columns>, getSelection: 'columns => QueryBuilder_Expr.t): t<'columns> => {
   let selection = Utils.ItemOrArray.apply(q.columns, getSelection)
 
@@ -128,16 +137,6 @@ let select = (q: t<'columns>, getProjection: 'columns => 'result): tx<'result> =
   Js.log(definition)
 
   {from: q.from, joins: q.joins, selection: q.selection, projection: {definition, refs}}
-}
-
-let selectAndConvert = (value, converter: 'a => 'b): 'b => {
-  let any = value->Obj.magic
-  let anyConverter = converter->Obj.magic
-
-  switch any {
-    | Any.Column(options) => Any.Column({...options, converter: Some(anyConverter)})->Obj.magic
-    | _ => any
-  }
 }
 
 let mapOne = (q: tx<'result>, row) => {

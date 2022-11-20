@@ -108,7 +108,7 @@ module Users = {
 }
 
 module Favorites = {
-  type columns = {songId: int, userId: int}
+  type columns = {songId: int, userId: int, likedAt: Js.Date.t}
   type constraints = {
     pk: Schema.Constraint.t,
     fkSong: Schema.Constraint.t,
@@ -118,8 +118,9 @@ module Favorites = {
   let table = Schema.Table.make(
     "favorites",
     {
-      songId: Schema.Column.integer({size: 10}),
-      userId: Schema.Column.integer({size: 10}),
+      songId: Schema.Column.integer({}),
+      userId: Schema.Column.integer({}),
+      likedAt: Schema.Column.date({}),
     },
     columns => {
       pk: Schema.Constraint.primaryKey((columns.songId, columns.userId)),
@@ -323,6 +324,21 @@ let insertData = () => {
     ])
     ->SQL.fromInsertIntoQuery
 
+  let q4 =
+    insertInto(Users.table)
+    ->values([
+      {id: 1, name: "John Doe"},
+    ])
+    ->SQL.fromInsertIntoQuery
+
+  let q5 =
+    insertInto(Favorites.table)
+    ->values([
+      {userId: 1, songId: 1, likedAt: Js.Date.fromString("2022-01-01")},
+      {userId: 1, songId: 2, likedAt: Js.Date.fromString("2022-02-01")},
+    ])
+    ->SQL.fromInsertIntoQuery
+
   log(q1)
   log("")
 
@@ -332,9 +348,17 @@ let insertData = () => {
   log(q3)
   log("")
 
+  log(q4)
+  log("")
+
+  log(q5)
+  log("")
+
   SQLite3.exec(connection, q1)
   SQLite3.exec(connection, q2)
   SQLite3.exec(connection, q3)
+  SQLite3.exec(connection, q4)
+  SQLite3.exec(connection, q5)
 }
 
 let updateData = () => {
@@ -376,7 +400,7 @@ let selectNameFromArtist1 = () => {
   let q =
     from(Artists.table)
     ->where(artist => eq(artist.id, 1))
-    ->select(artist => {"name": artist.name, "x": 42, "lengthOfName": selectAndConvert(artist.name, Js.String2.length)})
+    ->select(artist => {"name": artist.name})
 
   let sql = SQL.fromSelectQuery(q)
 
@@ -424,9 +448,34 @@ let selectArtistsWithAlbumsWithSongs = () => {
   log(result)
 }
 
+let selectFavoritesOfUser1 = () => {
+  open QueryBuilder.Select
+  open QueryBuilder.Expr
+
+  let q =
+    from(Favorites.table)
+    ->join1(Songs.table, Inner, ((favorite, song)) => eq(favorite.songId, song.id))
+    ->join2(Albums.table, Inner, ((_favorite, song, album)) => eq(song.albumId, album.id))
+    ->join3(Artists.table, Inner, ((_favorite, _song, album, artist)) => eq(album.artistId, artist.id))
+    ->select(((favorite, song, _album, artist)) => {
+      "song": song.name,
+      "artist": artist.name,
+      "likeAt": favorite.likedAt,
+    })
+
+  let sql = SQL.fromSelectQuery(q)
+  log(sql)
+
+  let mapper = mapMany(q)
+  let result = connection->SQLite3.prepare(sql)->SQLite3.all->mapper
+
+  log(result)
+}
+
 createTables()
 insertData()
 /* updateData() */
 /* deleteData() */
-selectNameFromArtist1()
+/* selectNameFromArtist1() */
 /* selectArtistsWithAlbumsWithSongs() */
+selectFavoritesOfUser1()
