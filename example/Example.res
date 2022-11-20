@@ -460,7 +460,7 @@ let selectFavoritesOfUser1 = () => {
     ->select(((favorite, song, _album, artist)) => {
       "song": song,
       "artist": artist,
-      "likeAt": favorite.likedAt,
+      "likedAt": favorite.likedAt,
     })
 
   let sql = SQL.fromSelectQuery(q)
@@ -474,8 +474,8 @@ let selectFavoritesOfUser1 = () => {
 
 createTables()
 insertData()
-/* updateData() */
-/* deleteData() */
-/* selectNameFromArtist1() */
-/* selectArtistsWithAlbumsWithSongs() */
+updateData()
+deleteData()
+selectNameFromArtist1()
+selectArtistsWithAlbumsWithSongs()
 selectFavoritesOfUser1()
