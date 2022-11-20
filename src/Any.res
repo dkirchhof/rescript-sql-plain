@@ -24,7 +24,7 @@ let makeObj = value => Obj(value)
 let make: 'a => t = %raw(`
   function(value) {
     if (value === undefined) {
-      return skip;
+      return makeSkip();
     }
 
     if (typeof value === "number") {
