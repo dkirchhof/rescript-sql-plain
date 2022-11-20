@@ -72,7 +72,10 @@ let fromCreateTableQuery = (q: QueryBuilder.CreateTable.t<_>) => {
       ->Obj.magic
       ->Js.Dict.entries
       ->Js.Array2.map(((name: string, column: Schema.Column.t)) =>
-        `${name} ${(column.dbType :> string)}(${column.size->Belt.Int.toString}) NOT NULL`
+        switch column.size {
+        | Some(size) => `${name} ${(column.dbType :> string)}(${size->Belt.Int.toString}) NOT NULL`
+        | None => `${name} ${(column.dbType :> string)} NOT NULL`
+        }
       ),
     )
     ->addM(

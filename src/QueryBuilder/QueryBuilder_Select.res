@@ -84,7 +84,7 @@ let where = (q: t<'columns>, getSelection: 'columns => QueryBuilder_Expr.t): t<'
   {...q, selection: Some(selection)}
 }
 
-let select = (q: t<'columns>, getProjection: 'columns => 'result) => {
+let select = (q: t<'columns>, getProjection: 'columns => 'result): tx<'result> => {
   let obj = Utils.ItemOrArray.apply(q.columns, getProjection)->Obj.magic
 
   let counter = ref(0)
@@ -100,6 +100,15 @@ let select = (q: t<'columns>, getProjection: 'columns => 'result) => {
       switch value {
       | Array(value) => (key, [objToDefinition(value[0])]->Obj.magic)
       | Obj(value) => (key, objToDefinition(value)->Obj.magic)
+      | Column(options) => {
+          counter.contents = counter.contents + 1
+
+          let alias = `c${counter.contents->Belt.Int.toString}`
+
+          Js.Dict.set(refs, alias, value)
+
+          (key, {"column": alias, "type": options.converter})
+      }
       | _ => {
           counter.contents = counter.contents + 1
 
@@ -107,16 +116,28 @@ let select = (q: t<'columns>, getProjection: 'columns => 'result) => {
 
           Js.Dict.set(refs, alias, value)
 
-          (key, alias)
+          (key, {"column": alias, "type": None})
         }
       }
     })
     ->Js.Dict.fromArray
+    ->Obj.magic
   }
 
   let definition = objToDefinition(obj)
+  Js.log(definition)
 
   {from: q.from, joins: q.joins, selection: q.selection, projection: {definition, refs}}
+}
+
+let selectAndConvert = (value, converter: 'a => 'b): 'b => {
+  let any = value->Obj.magic
+  let anyConverter = converter->Obj.magic
+
+  switch any {
+    | Any.Column(options) => Any.Column({...options, converter: Some(anyConverter)})->Obj.magic
+    | _ => any
+  }
 }
 
 let mapOne = (q: tx<'result>, row) => {

@@ -1,6 +1,9 @@
+type unknown
+
 type columnOption = {
   tableAlias: option<string>,
   columnName: string,
+  converter: option<unknown => unknown>,
 }
 
 @deriving(accessors)

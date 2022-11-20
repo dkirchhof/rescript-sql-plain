@@ -31,7 +31,7 @@ let columnsToAnyDict = (columns, tableAlias) => {
   columns
   ->Obj.magic
   ->Js.Dict.keys
-  ->Js.Array2.map(columnName => (columnName, Any.Column({tableAlias, columnName})))
+  ->Js.Array2.map(columnName => (columnName, Any.Column({tableAlias, columnName, converter: None})))
   ->Js.Dict.fromArray
 }
 

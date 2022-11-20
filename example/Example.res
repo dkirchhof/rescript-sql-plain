@@ -342,13 +342,14 @@ let updateData = () => {
   open QueryBuilder.Update
   open QueryBuilder.Expr
 
-  let q1 = update(Artists.table)
-  ->set({
-    id: skip,
-    name: "DELETEME",
-  })
-  ->where(c => eq(c.id, 5))
-  ->SQL.fromUpdateQuery
+  let q1 =
+    update(Artists.table)
+    ->set({
+      id: skip,
+      name: "DELETEME",
+    })
+    ->where(c => eq(c.id, 5))
+    ->SQL.fromUpdateQuery
 
   log(q1)
   log("")
@@ -373,7 +374,9 @@ let selectNameFromArtist1 = () => {
   open QueryBuilder.Expr
 
   let q =
-    from(Artists.table)->where(artist => eq(artist.id, 1))->select(artist => {"name": artist.name, "x": 42})
+    from(Artists.table)
+    ->where(artist => eq(artist.id, 1))
+    ->select(artist => {"name": artist.name, "x": 42, "lengthOfName": selectAndConvert(artist.name, Js.String2.length)})
 
   let sql = SQL.fromSelectQuery(q)
 
@@ -423,7 +426,7 @@ let selectArtistsWithAlbumsWithSongs = () => {
 
 createTables()
 insertData()
-updateData()
-deleteData()
+/* updateData() */
+/* deleteData() */
 selectNameFromArtist1()
-selectArtistsWithAlbumsWithSongs()
+/* selectArtistsWithAlbumsWithSongs() */
