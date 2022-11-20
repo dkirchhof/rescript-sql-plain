@@ -458,8 +458,8 @@ let selectFavoritesOfUser1 = () => {
     ->join2(Albums.table, Inner, ((_favorite, song, album)) => eq(song.albumId, album.id))
     ->join3(Artists.table, Inner, ((_favorite, _song, album, artist)) => eq(album.artistId, artist.id))
     ->select(((favorite, song, _album, artist)) => {
-      "song": song.name,
-      "artist": artist.name,
+      "song": song,
+      "artist": artist,
       "likeAt": favorite.likedAt,
     })
 
