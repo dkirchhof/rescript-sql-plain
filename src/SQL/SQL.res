@@ -26,18 +26,28 @@ open StringBuilder
 
   let constraintToSQL = (name, cnstraint) =>
     switch cnstraint {
-    | Schema.Constraint.PrimaryKey(columns) => {
-        let columnsString = columns->Belt.Array.joinWith(",", column => column.name)
+    | Schema.Constraint.PrimaryKey(cols) => {
+        let columnsString = cols->Belt.Array.joinWith(", ", col =>
+          switch col {
+          | ColumnOrLiteral.Column(column) => column.name
+          | _ => Js.Exn.raiseError("This value should be a columns.")
+          }
+        )
 
         `CONSTRAINT ${name} PRIMARY KEY(${columnsString})`
       }
 
-    | ForeignKey(ownColumn, foreignColumn, onUpdate, onDelete) => {
-        let references = `REFERENCES ${foreignColumn.table}(${foreignColumn.name})`
-        let onUpdate = `ON UPDATE ${fkStrategyToSQL(onUpdate)}`
-        let onDelete = `ON DELETE ${fkStrategyToSQL(onDelete)}`
+    | ForeignKey(ownColumn, foreignColumn, onUpdate, onDelete) =>
+      switch (ownColumn, foreignColumn) {
+      | (ColumnOrLiteral.Column(ownColumn), ColumnOrLiteral.Column(foreignColumn)) => {
+          let references = `REFERENCES ${foreignColumn.table}(${foreignColumn.name})`
+          let onUpdate = `ON UPDATE ${fkStrategyToSQL(onUpdate)}`
+          let onDelete = `ON DELETE ${fkStrategyToSQL(onDelete)}`
 
-        `CONSTRAINT ${name} FOREIGN KEY(${ownColumn.name}) ${references} ${onUpdate} ${onDelete}`
+          `CONSTRAINT ${name} FOREIGN KEY(${ownColumn.name}) ${references} ${onUpdate} ${onDelete}`
+        }
+
+      | _ => Js.Exn.raiseError("These values should be columns.")
       }
     }
 
@@ -70,12 +80,18 @@ let fromCreateTableQuery = (q: QueryBuilder.CreateTable.t<_>) => {
     ->addM(
       2,
       q.table.columns
-      ->Obj.magic
+      ->ColumnOrLiteral.dictFromRecord
       ->Js.Dict.entries
-      ->Js.Array2.map(((name: string, column: Schema.Column.t<Any.t, Any.t>)) =>
-        switch column.size {
-        | Some(size) => `${name} ${(column.dbType :> string)}(${size->Belt.Int.toString}) NOT NULL`
-        | None => `${name} ${(column.dbType :> string)} NOT NULL`
+      ->Js.Array2.map(((name: string, col)) =>
+        switch col {
+        | ColumnOrLiteral.Column(column) =>
+          let sizeString = switch column.size {
+          | Some(size) => `(${size->Belt.Int.toString})`
+          | None => ""
+          }
+
+          `${name} ${(column.dbType :> string)}${sizeString} NOT NULL`
+        | _ => Js.Exn.raiseError("This value should be a column.")
         }
       ),
     )
@@ -113,29 +129,52 @@ let fromSelectQuery = (q: QueryBuilder.Select.tx<_>) => {
   ->build("\n")
 }
 
-%%private(
-  let rowToValues = (row, column) => row->Obj.magic->Js.Dict.unsafeGet(column)->anyToSQL
-
-  let rowToValuesString = (columns, row) =>
-    `(${columns->Js.Array2.map(rowToValues(row))->Js.Array2.joinWith(", ")})`
-)
-
 let fromInsertIntoQuery = (q: QueryBuilder.Insert.tx<_>) => {
-  let columns =
-    q.values[0]
-    ->Obj.magic
-    ->Js.Dict.entries
-    ->Js.Array2.filter(((_, value)) => value !== Any.Skip)
-    ->Js.Array2.map(fst)
+  /* let columns = */
+  /* q.values[0] */
+  /* ->Obj.magic */
+  /* ->Js.Dict.entries */
+  /* ->Js.Array2.filter(((_, value)) => value !== Any.Skip) */
+  /* ->Js.Array2.map(fst) */
+  let columnNames = q.values[0]->ColumnOrLiteral.dictFromRecord->Js.Dict.keys
 
-  let columnsString = columns->Js.Array2.joinWith(", ")
+  let columnsString = columnNames->Js.Array2.joinWith(", ")
 
-  let valuesString =
-    make()->addM(2, q.values->Js.Array2.map(rowToValuesString(columns)))->build(",\n")
+  let rowsString = q.values->Js.Array2.map(row => {
+    let rowString =
+      columnNames
+      ->Js.Array2.map(columnName => {
+        let tableColumn =
+          q.tableColumns->ColumnOrLiteral.dictFromRecord->Js.Dict.unsafeGet(columnName)
+
+        let value = row->ColumnOrLiteral.dictFromRecord->Js.Dict.unsafeGet(columnName)
+
+        switch value {
+        | ColumnOrLiteral.Literal(value) => {
+            let convertedValue = switch tableColumn {
+            | ColumnOrLiteral.Column({converter: Some(converter)}) => converter.resToDB(value)
+            | _ => value
+            }
+
+            if Js.Types.test(convertedValue, Js.Types.String) {
+              `'${convertedValue->Obj.magic->Utils.replaceAll("'", "''")}'`
+            } else {
+              convertedValue->Obj.magic
+            }
+          }
+
+        | _ => Js.Exn.raiseError("not implemented")
+        }
+      })
+      ->Js.Array2.joinWith(", ")
+
+    `(${rowString})`
+  })
+
+  let valuesString = make()->addM(2, rowsString)->build(",\n")
 
   make()
-  ->addS(0, `INSERT INTO ${q.table} (${columnsString})`)
-  ->addS(0, `VALUES`)
+  ->addS(0, `INSERT INTO ${q.tableName}(${columnsString}) VALUES`)
   ->addS(0, valuesString)
   ->build("\n")
 }

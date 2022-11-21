@@ -4,15 +4,18 @@ type t<'columns, 'constraints> = {
   constraints: 'constraints,
 }
 
-let make = (name, columns: 'a, makeConstraints: 'a => 'b) => {
-  let columns: 'a =
+let make = (name, columns: 'columns, makeConstraints: 'columns => 'constraints) => {
+  let columns: 'columns =
     columns
-    ->Obj.magic
+    ->ColumnOrLiteral.dictFromRecord
     ->Js.Dict.entries
-    ->Js.Array2.map(((columnName, column: Schema_Column.t<Any.t, Any.t>)) => (
-      columnName,
-      {...column, table: name, name: columnName},
-    ))
+    ->Js.Array2.map(((columnName, col)) => {
+      let col = switch col {
+        | ColumnOrLiteral.Column(column) => ColumnOrLiteral.Column({...column, table: name, name: columnName})
+        | _ => Js.Exn.raiseError("This value should be a Column.")
+      }
+      (columnName, col)
+    })
     ->Js.Dict.fromArray
     ->Obj.magic
 

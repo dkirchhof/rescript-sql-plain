@@ -1,19 +1,18 @@
-type t<'columns> = {table: string}
+type t<'columns> = {tableName: string, tableColumns: 'columns}
 
 type tx<'columns> = {
-  table: string,
-  values: array<Js.Dict.t<Any.t>>,
+  tableName: string,
+  tableColumns: 'columns,
+  values: array<'columns>,
 }
 
-let insertInto = (table: Schema.Table.t<'columns, _>): t<'columns> => {
-  table: table.name,
+let insertInto = (table: Schema.Table.t<'columns, _>) => {
+  tableName: table.name,
+  tableColumns: table.columns,
 }
 
 let values = (q: t<'columns>, values: array<'columns>) => {
-  let values' = values->Js.Array2.map(Utils.objToRefsDict)
-
-  {
-    table: q.table,
-    values: values',
-  }
+  tableName: q.tableName,
+  tableColumns: q.tableColumns,
+  values,
 }
