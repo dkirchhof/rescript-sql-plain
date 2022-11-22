@@ -14,6 +14,6 @@
     "nesthydrationjs": "^2.0.0"
   },
   "optionalDependencies": {
-    "better-sqlite3": "WiseLibs/better-sqlite3#pull/870/head"
+    "better-sqlite3": "^8.0.0"
   }
 }
