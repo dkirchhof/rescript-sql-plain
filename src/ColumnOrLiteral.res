@@ -1,4 +1,4 @@
-type t<'res, 'db> = Column(Schema_Column.t<'res, 'db>) | Literal('res)
+type t<'res, 'db> = Skip | Column(Schema_Column.t<'res, 'db>) | Literal('res)
 
 /* type unknown */
 /* type unknownCOL = t<unknown, unknown> */

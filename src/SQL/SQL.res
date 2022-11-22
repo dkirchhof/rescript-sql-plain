@@ -72,6 +72,25 @@ open StringBuilder
 
     `${joinTypeString} ${tableName} AS ${tableAlias} ON ${exprString}`
   }
+
+  let convertIfNecessary = (value, col) => {
+    switch value {
+    | ColumnOrLiteral.Literal(value) => {
+        let convertedValue = switch col {
+        | ColumnOrLiteral.Column({converter: Some(converter)}) => converter.resToDB(value)
+        | _ => value
+        }
+
+        if Js.Types.test(convertedValue, Js.Types.String) {
+          `'${convertedValue->Obj.magic->Utils.replaceAll("'", "''")}'`
+        } else {
+          convertedValue->Obj.magic
+        }
+      }
+
+    | _ => Js.Exn.raiseError("not implemented")
+    }
+  }
 )
 
 let fromCreateTableQuery = (q: QueryBuilder.CreateTable.t<_>) => {
@@ -130,48 +149,29 @@ let fromSelectQuery = (q: QueryBuilder.Select.tx<_>) => {
 }
 
 let fromInsertIntoQuery = (q: QueryBuilder.Insert.tx<_>) => {
-  /* let columns = */
-  /* q.values[0] */
-  /* ->Obj.magic */
-  /* ->Js.Dict.entries */
-  /* ->Js.Array2.filter(((_, value)) => value !== Any.Skip) */
-  /* ->Js.Array2.map(fst) */
-  let columnNames = q.values[0]->ColumnOrLiteral.dictFromRecord->Js.Dict.keys
+  let columnNames =
+    q.values[0]
+    ->ColumnOrLiteral.dictFromRecord
+    ->Js.Dict.entries
+    ->Js.Array2.filter(((_, value)) => value !== ColumnOrLiteral.Skip)
+    ->Js.Array2.map(fst)
 
   let columnsString = columnNames->Js.Array2.joinWith(", ")
 
-  let rowsString = q.values->Js.Array2.map(row => {
+  let rowStrings = q.values->Js.Array2.map(row => {
     let rowString =
       columnNames
       ->Js.Array2.map(columnName => {
-        let tableColumn =
-          q.tableColumns->ColumnOrLiteral.dictFromRecord->Js.Dict.unsafeGet(columnName)
+        let col = q.tableColumns->ColumnOrLiteral.dictFromRecord->Js.Dict.unsafeGet(columnName)
 
-        let value = row->ColumnOrLiteral.dictFromRecord->Js.Dict.unsafeGet(columnName)
-
-        switch value {
-        | ColumnOrLiteral.Literal(value) => {
-            let convertedValue = switch tableColumn {
-            | ColumnOrLiteral.Column({converter: Some(converter)}) => converter.resToDB(value)
-            | _ => value
-            }
-
-            if Js.Types.test(convertedValue, Js.Types.String) {
-              `'${convertedValue->Obj.magic->Utils.replaceAll("'", "''")}'`
-            } else {
-              convertedValue->Obj.magic
-            }
-          }
-
-        | _ => Js.Exn.raiseError("not implemented")
-        }
+        row->ColumnOrLiteral.dictFromRecord->Js.Dict.unsafeGet(columnName)->convertIfNecessary(col)
       })
       ->Js.Array2.joinWith(", ")
 
     `(${rowString})`
   })
 
-  let valuesString = make()->addM(2, rowsString)->build(",\n")
+  let valuesString = make()->addM(2, rowStrings)->build(",\n")
 
   make()
   ->addS(0, `INSERT INTO ${q.tableName}(${columnsString}) VALUES`)
