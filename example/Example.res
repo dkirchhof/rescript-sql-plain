@@ -1,4 +1,4 @@
-open ColumnOrLiteral
+open Node
 
 %%raw(`
   import { inspect } from "util";
@@ -18,8 +18,8 @@ let connection = SQLite3.createConnection(":memory:")
 
 module Artists = {
   type columns = {
-    id: intCOL,
-    name: stringCOL,
+    id: intNode,
+    name: stringNode,
   }
 
   type constraints = {pk: Schema.Constraint.t}
@@ -38,10 +38,10 @@ module Artists = {
 
 module Albums = {
   type columns = {
-    id: intCOL,
-    artistId: intCOL,
-    name: stringCOL,
-    year: intCOL,
+    id: intNode,
+    artistId: intNode,
+    name: stringNode,
+    year: intNode,
   }
 
   type constraints = {pk: Schema.Constraint.t, fkArtist: Schema.Constraint.t}
@@ -68,10 +68,10 @@ module Albums = {
 
 module Songs = {
   type columns = {
-    id: intCOL,
-    albumId: intCOL,
-    name: stringCOL,
-    duration: stringCOL,
+    id: intNode,
+    albumId: intNode,
+    name: stringNode,
+    duration: stringNode,
   }
 
   type constraints = {pk: Schema.Constraint.t, fkAlbum: Schema.Constraint.t}
@@ -98,8 +98,8 @@ module Songs = {
 
 module Users = {
   type columns = {
-    id: intCOL,
-    name: stringCOL,
+    id: intNode,
+    name: stringNode,
   }
 
   type constraints = {pk: Schema.Constraint.t}
@@ -118,9 +118,9 @@ module Users = {
 
 module Favorites = {
   type columns = {
-    songId: intCOL,
-    userId: intCOL,
-    likedAt: dateCOL,
+    songId: intNode,
+    userId: intNode,
+    likedAt: dateNode,
   }
 
   type constraints = {

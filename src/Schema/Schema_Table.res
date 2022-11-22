@@ -7,14 +7,14 @@ type t<'columns, 'constraints> = {
 let make = (name, columns: 'columns, makeConstraints: 'columns => 'constraints) => {
   let columns: 'columns =
     columns
-    ->ColumnOrLiteral.dictFromRecord
+    ->Node.dictFromRecord
     ->Js.Dict.entries
-    ->Js.Array2.map(((columnName, col)) => {
-      let col = switch col {
-        | ColumnOrLiteral.Column(column) => ColumnOrLiteral.Column({...column, table: name, name: columnName})
+    ->Js.Array2.map(((columnName, node)) => {
+      let column = switch node {
+        | Node.Column(column) => Node.Column({...column, table: name, name: columnName})
         | _ => Js.Exn.raiseError("This value should be a Column.")
       }
-      (columnName, col)
+      (columnName, column)
     })
     ->Js.Dict.fromArray
     ->Obj.magic

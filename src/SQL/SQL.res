@@ -26,10 +26,10 @@ open StringBuilder
 
   let constraintToSQL = (name, cnstraint) =>
     switch cnstraint {
-    | Schema.Constraint.PrimaryKey(cols) => {
-        let columnsString = cols->Belt.Array.joinWith(", ", col =>
-          switch col {
-          | ColumnOrLiteral.Column(column) => column.name
+    | Schema.Constraint.PrimaryKey(nodes) => {
+        let columnsString = nodes->Belt.Array.joinWith(", ", node =>
+          switch node {
+          | Node.Column(column) => column.name
           | _ => Js.Exn.raiseError("This value should be a columns.")
           }
         )
@@ -39,7 +39,7 @@ open StringBuilder
 
     | ForeignKey(ownColumn, foreignColumn, onUpdate, onDelete) =>
       switch (ownColumn, foreignColumn) {
-      | (ColumnOrLiteral.Column(ownColumn), ColumnOrLiteral.Column(foreignColumn)) => {
+      | (Node.Column(ownColumn), Node.Column(foreignColumn)) => {
           let references = `REFERENCES ${foreignColumn.table}(${foreignColumn.name})`
           let onUpdate = `ON UPDATE ${fkStrategyToSQL(onUpdate)}`
           let onDelete = `ON DELETE ${fkStrategyToSQL(onDelete)}`
@@ -73,11 +73,11 @@ open StringBuilder
     `${joinTypeString} ${tableName} AS ${tableAlias} ON ${exprString}`
   }
 
-  let convertIfNecessary = (value, col) => {
-    switch value {
-    | ColumnOrLiteral.Literal(value) => {
-        let convertedValue = switch col {
-        | ColumnOrLiteral.Column({converter: Some(converter)}) => converter.resToDB(value)
+  let convertIfNecessary = (sourceNode, targetNode) => {
+    switch sourceNode {
+    | Node.Literal(value) => {
+        let convertedValue = switch targetNode {
+        | Node.Column({converter: Some(converter)}) => converter.resToDB(value)
         | _ => value
         }
 
@@ -99,18 +99,18 @@ let fromCreateTableQuery = (q: QueryBuilder.CreateTable.t<_>) => {
     ->addM(
       2,
       q.table.columns
-      ->ColumnOrLiteral.dictFromRecord
+      ->Node.dictFromRecord
       ->Js.Dict.entries
-      ->Js.Array2.map(((name: string, col)) =>
-        switch col {
-        | ColumnOrLiteral.Column(column) =>
+      ->Js.Array2.map(((name: string, node)) =>
+        switch node {
+        | Node.Column(column) =>
           let sizeString = switch column.size {
           | Some(size) => `(${size->Belt.Int.toString})`
           | None => ""
           }
 
           `${name} ${(column.dbType :> string)}${sizeString} NOT NULL`
-        | _ => Js.Exn.raiseError("This value should be a column.")
+        | _ => Js.Exn.raiseError("This node should be a column.")
         }
       ),
     )
@@ -151,9 +151,9 @@ let fromSelectQuery = (q: QueryBuilder.Select.tx<_>) => {
 let fromInsertIntoQuery = (q: QueryBuilder.Insert.tx<_>) => {
   let columnNames =
     q.values[0]
-    ->ColumnOrLiteral.dictFromRecord
+    ->Node.dictFromRecord
     ->Js.Dict.entries
-    ->Js.Array2.filter(((_, value)) => value !== ColumnOrLiteral.Skip)
+    ->Js.Array2.filter(((_, value)) => value !== Node.Skip)
     ->Js.Array2.map(fst)
 
   let columnsString = columnNames->Js.Array2.joinWith(", ")
@@ -162,9 +162,9 @@ let fromInsertIntoQuery = (q: QueryBuilder.Insert.tx<_>) => {
     let rowString =
       columnNames
       ->Js.Array2.map(columnName => {
-        let col = q.tableColumns->ColumnOrLiteral.dictFromRecord->Js.Dict.unsafeGet(columnName)
+        let column = q.tableColumns->Node.dictFromRecord->Js.Dict.unsafeGet(columnName)
 
-        row->ColumnOrLiteral.dictFromRecord->Js.Dict.unsafeGet(columnName)->convertIfNecessary(col)
+        row->Node.dictFromRecord->Js.Dict.unsafeGet(columnName)->convertIfNecessary(column)
       })
       ->Js.Array2.joinWith(", ")
 
