@@ -6,12 +6,12 @@ type tx<'columns> = {
   values: array<'columns>,
 }
 
-let insertInto = (table: Schema.Table.t<'columns, _>) => {
+let insertInto = (table: Schema.Table.t<_>) => {
   tableName: table.name,
   tableColumns: table.columns,
 }
 
-let values = (q: t<'columns>, values: array<'columns>) => {
+let values = (q: t<_>, values) => {
   tableName: q.tableName,
   tableColumns: q.tableColumns,
   values,

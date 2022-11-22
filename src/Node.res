@@ -5,4 +5,13 @@ type intNode = t<int, int>
 type stringNode = t<string, string>
 type dateNode = t<Js.Date.t, string>
 
-external dictFromRecord: 'a => Js.Dict.t<t<unknown, unknown>> = "%identity"
+external toUnknown: t<_> => unknownNode = "%identity"
+external dictFromRecord: 'a => Js.Dict.t<unknownNode> = "%identity"
+external recordFromDict: Js.Dict.t<unknownNode> => 'a = "%identity"
+
+let getColumnExn = node => {
+  switch node {
+    | Column(column) => column
+    | _ => Js.Exn.raiseError("This node should be a column.")
+  }
+}

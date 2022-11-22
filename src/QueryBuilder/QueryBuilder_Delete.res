@@ -1,17 +1,17 @@
 type t<'columns> = {
-  table: string,
-  columns: Js.Dict.t<Any.t>,
+  tableName: string,
+  tableColumns: 'columns,
   selection: option<QueryBuilder_Expr.t>,
 }
 
-let deleteFrom = (table: Schema.Table.t<'columns, _>): t<'columns> => {
-  table: table.name,
-  columns: Utils.columnsToAnyDict(table.columns, None),
+let deleteFrom = (table: Schema.Table.t<_>) => {
+  tableName: table.name,
+  tableColumns: table.columns,
   selection: None,
 }
 
-let where = (q: t<'columns>, getSelection: 'columns => QueryBuilder_Expr.t) => {
-  let selection = getSelection(q.columns->Obj.magic)
+let where = (q, getSelection) => {
+  let selection = getSelection(q.tableColumns)
 
   {...q, selection: Some(selection)}
 }

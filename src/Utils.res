@@ -31,7 +31,10 @@ let columnsToAnyDict = (columns, tableAlias) => {
   columns
   ->Obj.magic
   ->Js.Dict.values
-  ->Js.Array2.map((column: Schema_Column.t<_>) => (column.name, Any.makeColumn(tableAlias, column.name, column.converter)))
+  ->Js.Array2.map((column: Schema_Column.t<_>) => (
+    column.name,
+    Any.makeColumn(tableAlias, column.name, column.converter),
+  ))
   ->Js.Dict.fromArray
 }
 
@@ -41,11 +44,21 @@ let objToRefsDict = obj => {
   ->Js.Dict.entries
   ->Belt.Array.keepMap(((column, value)) => {
     let value = Any.make(value)
-    
+
     switch value {
-      | Skip => None
-      | _=> Some(column, value)
+    | Skip => None
+    | _ => Some(column, value)
     }
   })
   ->Js.Dict.fromArray
 }
+
+let stringify: 'a => string = %raw(`
+  function(value) {
+    if (typeof value === "string") {
+      return "'" + value.replaceAll("'", "''") + "'";
+    }
+
+    return value.toString();
+  }
+`)

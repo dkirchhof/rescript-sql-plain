@@ -1,29 +1,29 @@
 type t<'columns> = {
-  table: string,
-  columns: Js.Dict.t<Any.t>,
+  tableName: string,
+  tableColumns: 'columns,
 }
 
 type tx<'columns> = {
-  table: string,
-  columns: Js.Dict.t<Any.t>,
-  patch: Js.Dict.t<Any.t>,
+  tableName: string,
+  tableColumns: 'columns,
+  patch: 'columns,
   selection: option<QueryBuilder_Expr.t>,
 }
 
-let update = (table: Schema.Table.t<'columns, _>): t<'columns> => {
-  table: table.name,
-  columns: Utils.columnsToAnyDict(table.columns, None),
+let update = (table: Schema.Table.t<_>) => {
+  tableName: table.name,
+  tableColumns: table.columns,
 }
 
-let set = (q: t<'columns>, patch: 'columns): tx<'columns> => {
-  table: q.table,
-  columns: q.columns,
-  patch: Utils.objToRefsDict(patch),
+let set = (q: t<_>, patch: 'columns) => {
+  tableName: q.tableName,
+  tableColumns: q.tableColumns,
+  patch,
   selection: None,
 }
 
-let where = (q: tx<'columns>, getSelection: 'columns => QueryBuilder_Expr.t) => {
-  let selection = getSelection(q.columns->Obj.magic)
+let where = (q, getSelection) => {
+  let selection = getSelection(q.tableColumns)
 
   {...q, selection: Some(selection)}
 }

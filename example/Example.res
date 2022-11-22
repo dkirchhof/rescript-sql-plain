@@ -194,7 +194,7 @@ let insertData = () => {
       {id: Literal(2), name: Literal("While She Sleeps")},
       {id: Literal(3), name: Literal("Misfits")},
       {id: Literal(4), name: Literal("Iron Maiden")},
-      {id: Literal(5), name: Literal("Test")},
+      {id: Literal(5), name: Literal("UPDATEME")},
     ])
     ->SQL.fromInsertIntoQuery
 
@@ -219,7 +219,12 @@ let insertData = () => {
   let q3 =
     insertInto(Songs.table)
     ->values([
-      {id: Literal(1), albumId: Literal(1), name: Literal("Early Grave"), duration: Literal("3:32")},
+      {
+        id: Literal(1),
+        albumId: Literal(1),
+        name: Literal("Early Grave"),
+        duration: Literal("3:32"),
+      },
       /* {id: 2, albumId: 1, name: "Dethroned", duration: "3:06"}, */
       /* {id: 3, albumId: 1, name: "Numbers Count for Nothing", duration: "3:50"}, */
       /* {id: 4, albumId: 1, name: "Follow the Water", duration: "3:40"}, */
@@ -338,7 +343,10 @@ let insertData = () => {
     ])
     ->SQL.fromInsertIntoQuery
 
-  let q4 = insertInto(Users.table)->values([{id: Literal(1), name: Literal("John Doe")}])->SQL.fromInsertIntoQuery
+  let q4 =
+    insertInto(Users.table)
+    ->values([{id: Literal(1), name: Literal("John Doe")}])
+    ->SQL.fromInsertIntoQuery
 
   let q5 =
     insertInto(Favorites.table)
@@ -370,37 +378,37 @@ let insertData = () => {
   SQLite3.exec(connection, q5)
 }
 
-/* let updateData = () => { */
-/* open QueryBuilder */
-/* open QueryBuilder.Update */
-/* open QueryBuilder.Expr */
+let updateData = () => {
+  open QueryBuilder.Update
+  open QueryBuilder.Expr
 
-/* let q1 = */
-/* update(Artists.table) */
-/* ->set({ */
-/* id: skip, */
-/* name: "DELETEME", */
-/* }) */
-/* ->where(c => eq(c.id, 5)) */
-/* ->SQL.fromUpdateQuery */
+  let q1 =
+    update(Artists.table)
+    ->set({
+      id: Skip,
+      name: Literal("DELETEME"),
+    })
+    ->where(c => eq(c.name, Literal("UPDATEME")))
+    ->SQL.fromUpdateQuery
 
-/* log(q1) */
-/* log("") */
+  log(q1)
+  log("")
 
-/* SQLite3.exec(connection, q1) */
-/* } */
+  SQLite3.exec(connection, q1)
+}
 
-/* let deleteData = () => { */
-/* open QueryBuilder.Delete */
-/* open QueryBuilder.Expr */
+let deleteData = () => {
+  open QueryBuilder.Delete
+  open QueryBuilder.Expr
 
-/* let q1 = deleteFrom(Artists.table)->where(c => eq(c.name, "DELETEME"))->SQL.fromDeleteQuery */
+  let q1 =
+    deleteFrom(Artists.table)->where(c => eq(c.name, Literal("DELETEME")))->SQL.fromDeleteQuery
 
-/* log(q1) */
-/* log("") */
+  log(q1)
+  log("")
 
-/* SQLite3.exec(connection, q1) */
-/* } */
+  SQLite3.exec(connection, q1)
+}
 
 /* let selectNameFromArtist1 = () => { */
 /* open QueryBuilder.Select */
@@ -485,8 +493,8 @@ let insertData = () => {
 
 createTables()
 insertData()
-/* updateData() */
-/* deleteData() */
+updateData()
+deleteData()
 /* selectNameFromArtist1() */
 /* selectArtistsWithAlbumsWithSongs() */
 /* selectFavoritesOfUser1() */

@@ -1,5 +1,67 @@
 open StringBuilder
 
+let convertIfNecessary2 = (value, targetColumn: Schema_Column.t<_>) => {
+  switch targetColumn.converter {
+  | Some(converter) => value->converter.resToDB
+  | _ => value
+  }
+}
+
+let convertIfNecessary = (sourceNode, targetColumn: Schema_Column.t<_>) => {
+  switch sourceNode {
+  | Node.Literal(value) => convertIfNecessary2(value, targetColumn)->Node.Literal
+  | _ => sourceNode
+  }
+}
+
+let getNonSkippedColumnNames = record => {
+  record
+  ->Node.dictFromRecord
+  ->Js.Dict.entries
+  ->Js.Array2.filter(((_, value)) => value !== Node.Skip)
+  ->Js.Array2.map(fst)
+}
+
+let getNonSkippedColumns = (~record, ~columns) => {
+  record
+  ->Node.dictFromRecord
+  ->Js.Dict.entries
+  ->Js.Array2.filter(((_, value)) => value !== Node.Skip)
+  ->Js.Array2.map(((columnName, _)) =>
+    columns->Node.dictFromRecord->Js.Dict.unsafeGet(columnName)->Node.getColumnExn
+  )
+}
+
+let convertRecordToStringDict = (~record, ~columns: array<Schema_Column.t<_>>) => {
+  columns
+  ->Js.Array2.map(column => {
+    let value = record->Node.dictFromRecord->Js.Dict.unsafeGet(column.name)
+
+    let valueString = switch value {
+    | Node.Literal(value) => convertIfNecessary2(value, column)->Utils.stringify
+    | _ => Js.Exn.raiseError("not implemented yet")
+    }
+
+    (column.name, valueString)
+  })
+  ->Js.Dict.fromArray
+}
+
+let expressionToSQL = expr =>
+  switch expr {
+  | QueryBuilder.Expr.Equal(left, right) => {
+      let column = left->Node.getColumnExn
+
+      let valueString = switch right {
+      | Node.Literal(value) => convertIfNecessary2(value, column)->Utils.stringify
+      | Node.Column(column) => `${column.table}.${column.name}`
+      | _ => Js.Exn.raiseError("not implemented yet")
+      }
+
+      `${column.table}.${column.name} = ${valueString}`
+    }
+  }
+
 %%private(
   let anyToSQL = value => {
     switch value {
@@ -47,14 +109,14 @@ open StringBuilder
           `CONSTRAINT ${name} FOREIGN KEY(${ownColumn.name}) ${references} ${onUpdate} ${onDelete}`
         }
 
-      | _ => Js.Exn.raiseError("These values should be columns.")
+      | _ => Js.Exn.raiseError("ownColumn and foreignColumn should be columns.")
       }
     }
 
-  let expressionToSQL = expr =>
-    switch expr {
-    | QueryBuilder.Expr.Equal(left, right) => `${left->anyToSQL} = ${right->anyToSQL}`
-    }
+  /* let expressionToSQL = expr => */
+  /* switch expr { */
+  /* | QueryBuilder.Expr.Equal(left, right) => `${left->anyToSQL} = ${right->anyToSQL}` */
+  /* } */
 
   let sourceToSQL = (source: QueryBuilder.Select.source) => `${source.name} AS ${source.alias}`
 
@@ -71,25 +133,6 @@ open StringBuilder
     let exprString = expressionToSQL(join.on)
 
     `${joinTypeString} ${tableName} AS ${tableAlias} ON ${exprString}`
-  }
-
-  let convertIfNecessary = (sourceNode, targetNode) => {
-    switch sourceNode {
-    | Node.Literal(value) => {
-        let convertedValue = switch targetNode {
-        | Node.Column({converter: Some(converter)}) => converter.resToDB(value)
-        | _ => value
-        }
-
-        if Js.Types.test(convertedValue, Js.Types.String) {
-          `'${convertedValue->Obj.magic->Utils.replaceAll("'", "''")}'`
-        } else {
-          convertedValue->Obj.magic
-        }
-      }
-
-    | _ => Js.Exn.raiseError("not implemented")
-    }
   }
 )
 
@@ -149,24 +192,12 @@ let fromSelectQuery = (q: QueryBuilder.Select.tx<_>) => {
 }
 
 let fromInsertIntoQuery = (q: QueryBuilder.Insert.tx<_>) => {
-  let columnNames =
-    q.values[0]
-    ->Node.dictFromRecord
-    ->Js.Dict.entries
-    ->Js.Array2.filter(((_, value)) => value !== Node.Skip)
-    ->Js.Array2.map(fst)
-
-  let columnsString = columnNames->Js.Array2.joinWith(", ")
+  let columns = getNonSkippedColumns(~record=q.values[0], ~columns=q.tableColumns)
+  let columnsString = columns->Belt.Array.joinWith(", ", column => column.name)
 
   let rowStrings = q.values->Js.Array2.map(row => {
-    let rowString =
-      columnNames
-      ->Js.Array2.map(columnName => {
-        let column = q.tableColumns->Node.dictFromRecord->Js.Dict.unsafeGet(columnName)
-
-        row->Node.dictFromRecord->Js.Dict.unsafeGet(columnName)->convertIfNecessary(column)
-      })
-      ->Js.Array2.joinWith(", ")
+    let converted = convertRecordToStringDict(~record=row, ~columns)
+    let rowString = converted->Js.Dict.values->Js.Array2.joinWith(", ")
 
     `(${rowString})`
   })
@@ -180,16 +211,17 @@ let fromInsertIntoQuery = (q: QueryBuilder.Insert.tx<_>) => {
 }
 
 let fromUpdateQuery = (q: QueryBuilder.Update.tx<_>) => {
+  let columns = getNonSkippedColumns(~record=q.patch, ~columns=q.tableColumns)
+  let convertedPatch = convertRecordToStringDict(~record=q.patch, ~columns)
+
   let patchString =
-    q.patch
-    ->Obj.magic
+    convertedPatch
     ->Js.Dict.entries
-    ->Js.Array2.filter(((_, value)) => value !== Any.Skip)
-    ->Js.Array2.map(((column, value)) => `${column} = ${anyToSQL(value)}`)
+    ->Js.Array2.map(((columnName, value)) => `${columnName} = ${value}`)
     ->Js.Array2.joinWith(", ")
 
   make()
-  ->addS(0, `UPDATE ${q.table}`)
+  ->addS(0, `UPDATE ${q.tableName}`)
   ->addS(2, `SET ${patchString}`)
   ->addSO(2, q.selection->Belt.Option.map(expr => `WHERE ${expressionToSQL(expr)}`))
   ->build("\n")
@@ -197,7 +229,7 @@ let fromUpdateQuery = (q: QueryBuilder.Update.tx<_>) => {
 
 let fromDeleteQuery = (q: QueryBuilder.Delete.t<_>) => {
   make()
-  ->addS(0, `DELETE FROM ${q.table}`)
+  ->addS(0, `DELETE FROM ${q.tableName}`)
   ->addSO(2, q.selection->Belt.Option.map(expr => `WHERE ${expressionToSQL(expr)}`))
   ->build("\n")
 }

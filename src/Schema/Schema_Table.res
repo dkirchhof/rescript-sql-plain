@@ -17,7 +17,7 @@ let make = (name, columns: 'columns, makeConstraints: 'columns => 'constraints) 
       (columnName, column)
     })
     ->Js.Dict.fromArray
-    ->Obj.magic
+    ->Node.recordFromDict
 
   {name, columns, constraints: makeConstraints(columns)}
 }

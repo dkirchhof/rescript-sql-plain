@@ -12,8 +12,8 @@ let primaryKey = columns => {
 
 let foreignKey = (~ownColumn: Node.t<'a, _>, ~foreignColumn: Node.t<'a, _>, ~onUpdate, ~onDelete) => {
   ForeignKey(
-    ownColumn->Obj.magic,
-    foreignColumn->Obj.magic,
+    ownColumn->Node.toUnknown,
+    foreignColumn->Node.toUnknown,
     onUpdate,
     onDelete,
   )
