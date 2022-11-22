@@ -410,22 +410,43 @@ let deleteData = () => {
   SQLite3.exec(connection, q1)
 }
 
-/* let selectNameFromArtist1 = () => { */
-/* open QueryBuilder.Select */
-/* open QueryBuilder.Expr */
+let selectNameFromArtist1 = () => {
+  open QueryBuilder.Select
+  open QueryBuilder.Expr
 
-/* let q = */
-/* from(Artists.table)->where(artist => eq(artist.id, 1))->select(artist => {"name": artist.name}) */
+  let q =
+    from(Artists.table)
+    ->where(artist => eq(artist.id, Literal(1)))
+    ->select(artist => {"name": artist.name})
 
-/* let sql = SQL.fromSelectQuery(q) */
+  let sql = SQL.fromSelectQuery(q)
 
-/* log(sql) */
+  log(sql)
 
-/* let mapper = mapOne(q) */
-/* let result = connection->SQLite3.prepare(sql)->SQLite3.get->Belt.Option.map(mapper) */
+  /* let mapper = mapOne(q) */
+  /* let result = connection->SQLite3.prepare(sql)->SQLite3.get->Belt.Option.map(mapper) */
 
-/* log(result) */
-/* } */
+  /* log(result) */
+}
+
+let selectFavorites = () => {
+  open QueryBuilder.Select
+
+  let q = from(Favorites.table)->select(fav => {
+    "userId": s(fav.userId),
+    "songId": s(fav.songId),
+    "date": s(fav.likedAt),
+  })
+
+  let sql = SQL.fromSelectQuery(q)
+
+  log(sql)
+
+  let mapper = map(q.projection)
+  let result = connection->SQLite3.prepare(sql)->SQLite3.all->Js.Array2.map(mapper)
+
+  log(result)
+}
 
 /* let selectArtistsWithAlbumsWithSongs = () => { */
 /* open QueryBuilder.Select */
@@ -495,6 +516,7 @@ createTables()
 insertData()
 updateData()
 deleteData()
+selectFavorites()
 /* selectNameFromArtist1() */
 /* selectArtistsWithAlbumsWithSongs() */
 /* selectFavoritesOfUser1() */

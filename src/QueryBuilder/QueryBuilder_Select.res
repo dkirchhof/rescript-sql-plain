@@ -11,11 +11,6 @@ type join = {
   on: QueryBuilder_Expr.t,
 }
 
-type projection<'definition> = {
-  refs: Js.Dict.t<Any.t>,
-  definition: 'definition,
-}
-
 type t<'columns> = {
   from: source,
   joins: array<join>,
@@ -27,8 +22,21 @@ type tx<'result> = {
   from: source,
   joins: array<join>,
   selection: option<QueryBuilder_Expr.t>,
-  projection: projection<'result>,
+  projection: 'result,
 }
+
+let mapColumns = (columns, f) =>
+  columns
+  ->Node.dictFromRecord
+  ->Js.Dict.entries
+  ->Js.Array2.map(((columnName, node)) => {
+    let column = Node.getColumnExn(node)
+    let mapped = column->f->Node.Column
+
+    (columnName, mapped)
+  })
+  ->Js.Dict.fromArray
+  ->Node.recordFromDict
 
 %%private(
   let join = (q, table: Schema.Table.t<_>, joinType, getCondition, alias) => {
@@ -56,7 +64,7 @@ type tx<'result> = {
 let from = (table: Schema.Table.t<'columns, _>): t<'columns> => {
   from: {name: table.name, alias: "t1"},
   joins: [],
-  columns: Item(Utils.columnsToAnyDict(table.columns, Some("t1"))),
+  columns: mapColumns(table.columns, column => {...column, table: "t1"})->Item,
   selection: None,
 }
 
@@ -94,54 +102,35 @@ let where = (q: t<'columns>, getSelection: 'columns => QueryBuilder_Expr.t): t<'
 }
 
 let select = (q: t<'columns>, getProjection: 'columns => 'result): tx<'result> => {
-  let obj = Utils.ItemOrArray.apply(q.columns, getProjection)->Obj.magic
+  let projection = Utils.ItemOrArray.apply(q.columns, getProjection)
 
-  let counter = ref(0)
-  let refs = Js.Dict.empty()
-
-  let rec objToDefinition = obj => {
-    obj
-    ->Obj.magic
-    ->Js.Dict.entries
-    ->Js.Array2.map(((key, value)) => {
-      let value = Any.make(value)
-
-      switch value {
-      | Array(value) => (key, [objToDefinition(value[0])]->Obj.magic)
-      | Obj(value) => (key, objToDefinition(value)->Obj.magic)
-      | Column(options) => {
-          counter.contents = counter.contents + 1
-
-          let alias = `c${counter.contents->Belt.Int.toString}`
-
-          Js.Dict.set(refs, alias, value)
-
-          (key, {"column": alias, "type": options.converter})
-      }
-      | _ => {
-          counter.contents = counter.contents + 1
-
-          let alias = `c${counter.contents->Belt.Int.toString}`
-
-          Js.Dict.set(refs, alias, value)
-
-          (key, {"column": alias, "type": None})
-        }
-      }
-    })
-    ->Js.Dict.fromArray
-    ->Obj.magic
-  }
-
-  let definition = objToDefinition(obj)
-
-  {from: q.from, joins: q.joins, selection: q.selection, projection: {definition, refs}}
+  {from: q.from, joins: q.joins, selection: q.selection, projection}
 }
 
-let mapOne = (q: tx<'result>, row) => {
-  NestHydrationJs.make()->NestHydrationJs.nestOne(row, q.projection.definition)
-}
+external s: Node.t<'a, _> => 'a = "%identity"
 
-let mapMany = (q: tx<'result>, rows) => {
-  NestHydrationJs.make()->NestHydrationJs.nestMany(rows, [q.projection.definition])
+/* let mapOne = (q: tx<'result>, row) => { */
+/* NestHydrationJs.make()->NestHydrationJs.nestOne(row, q.projection.definition) */
+/* } */
+
+/* let mapMany = (q: tx<'result>, rows) => { */
+/* NestHydrationJs.make()->NestHydrationJs.nestMany(rows, [q.projection.definition]) */
+/* } */
+
+let map = (projection: 'projection, row): 'projection => {
+  row
+  ->Obj.magic
+  ->Js.Dict.entries
+  ->Js.Array2.map(((columnName, value)) => {
+    let node = projection->Node.dictFromRecord->Js.Dict.unsafeGet(columnName)
+
+    let convertedValue = switch node {
+    | Column({converter: Some(converter)}) => value->converter.dbToRes
+    | _ => value
+    }
+
+    (columnName, convertedValue)
+  })
+  ->Js.Dict.fromArray
+  ->Obj.magic
 }

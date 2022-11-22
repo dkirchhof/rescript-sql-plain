@@ -63,20 +63,6 @@ let expressionToSQL = expr =>
   }
 
 %%private(
-  let anyToSQL = value => {
-    switch value {
-    | Any.Number(value) => value->Belt.Float.toString
-    | Any.String(value) => `'${value->Utils.replaceAll("'", "''")}'`
-    | Any.Date(value) => `'${value->Js.Date.toISOString}'`
-    | Any.Column(options) =>
-      switch options.tableAlias {
-      | Some(tableAlias) => `${tableAlias}.${options.columnName}`
-      | None => options.columnName
-      }
-    | Any.Skip | Any.Obj(_) | Any.Array(_) => Js.Exn.raiseError("Value has type Undefined")
-    }
-  }
-
   let fkStrategyToSQL = s =>
     switch s {
     | Schema.Constraint.FKStrategy.Cascade => "CASCADE"
@@ -137,7 +123,7 @@ let expressionToSQL = expr =>
 )
 
 let fromCreateTableQuery = (q: QueryBuilder.CreateTable.t<_>) => {
-  let sb2 =
+  let innerString =
     make()
     ->addM(
       2,
@@ -164,12 +150,9 @@ let fromCreateTableQuery = (q: QueryBuilder.CreateTable.t<_>) => {
       ->Js.Dict.entries
       ->Js.Array2.map(((name, cnstraint: Schema.Constraint.t)) => constraintToSQL(name, cnstraint)),
     )
+    ->build(",\n")
 
-  make()
-  ->addS(0, `CREATE TABLE ${q.table.name} (`)
-  ->addS(0, sb2->build(",\n"))
-  ->addS(0, `)`)
-  ->build("\n")
+  make()->addS(0, `CREATE TABLE ${q.table.name} (`)->addS(0, innerString)->addS(0, `)`)->build("\n")
 }
 
 let fromSelectQuery = (q: QueryBuilder.Select.tx<_>) => {
@@ -177,9 +160,15 @@ let fromSelectQuery = (q: QueryBuilder.Select.tx<_>) => {
     make()
     ->addM(
       0,
-      q.projection.refs
+      q.projection
+      ->Node.dictFromRecord
       ->Js.Dict.entries
-      ->Js.Array2.map(((alias, value)) => `${value->anyToSQL} AS '${alias}'`),
+      ->Js.Array2.map(((alias, node)) => {
+        switch node {
+        | Column(column) => `${column.table}.${column.name} AS ${alias}`
+        | _ => Js.Exn.raiseError("not implemented yet")
+        }
+      }),
     )
     ->build(", ")
 
