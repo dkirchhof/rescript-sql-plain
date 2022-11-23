@@ -11,7 +11,13 @@ external recordFromDict: Js.Dict.t<unknownNode> => 'a = "%identity"
 
 let getColumnExn = node => {
   switch node {
-    | Column(column) => column
-    | _ => Js.Exn.raiseError("This node should be a column.")
+  | Column(column) => column
+  | _ => Js.Exn.raiseError("This node should be a column.")
+  }
+}
+
+module Record = {
+  let mapEntries = (record: 'a, f): 'a => {
+    record->dictFromRecord->Js.Dict.entries->Js.Array2.map(f)->Js.Dict.fromArray->recordFromDict
   }
 }

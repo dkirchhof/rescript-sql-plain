@@ -62,3 +62,7 @@ let stringify: 'a => string = %raw(`
     return value.toString();
   }
 `)
+
+let mapEntries = (record: 'a, f): 'a => {
+  record->Obj.magic->Js.Dict.entries->Js.Array2.map(f)->Js.Dict.fromArray->Obj.magic
+}

@@ -9,9 +9,9 @@ type mutationResult = {changes: int, lastInsertRowId: int}
 @send external exec: (connection, string) => unit = "exec"
 @send external prepare: (connection, string) => statement = "prepare"
 
-@send external get: statement => option<{.}> = "get"
+@send external get: statement => option<{..}> = "get"
 /* @send external getWithParams: (statement, 'a) => _ = "get" */
-@send external all: statement => array<{.}> = "all"
+@send external all: statement => array<{..}> = "all"
 /* @send external allWithParams: (statement, 'a) => array<_> = "all" */
 /* @send external run: statement => mutationResult = "run" */
 /* @send external runWithParams: (statement, 'a) => mutationResult = "run" */

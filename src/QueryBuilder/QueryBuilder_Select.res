@@ -109,19 +109,8 @@ let select = (q: t<'columns>, getProjection: 'columns => 'result): tx<'result> =
 
 external s: Node.t<'a, _> => 'a = "%identity"
 
-/* let mapOne = (q: tx<'result>, row) => { */
-/* NestHydrationJs.make()->NestHydrationJs.nestOne(row, q.projection.definition) */
-/* } */
-
-/* let mapMany = (q: tx<'result>, rows) => { */
-/* NestHydrationJs.make()->NestHydrationJs.nestMany(rows, [q.projection.definition]) */
-/* } */
-
 let map = (projection: 'projection, row): 'projection => {
-  row
-  ->Obj.magic
-  ->Js.Dict.entries
-  ->Js.Array2.map(((columnName, value)) => {
+  row->Utils.mapEntries(((columnName, value)) => {
     let node = projection->Node.dictFromRecord->Js.Dict.unsafeGet(columnName)
 
     let convertedValue = switch node {
@@ -131,6 +120,4 @@ let map = (projection: 'projection, row): 'projection => {
 
     (columnName, convertedValue)
   })
-  ->Js.Dict.fromArray
-  ->Obj.magic
 }
