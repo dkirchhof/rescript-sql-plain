@@ -42,7 +42,7 @@ let mapColumns = (columns, f) =>
   let join = (q, table: Schema.Table.t<_>, joinType, getCondition, alias) => {
     let newColumns = Utils.ItemOrArray.concat(
       q.columns,
-      [Utils.columnsToAnyDict(table.columns, Some(alias))],
+      [mapColumns(table.columns, column => {...column, table: alias})],
     )
 
     let join: join = {
@@ -62,9 +62,9 @@ let mapColumns = (columns, f) =>
 )
 
 let from = (table: Schema.Table.t<'columns, _>): t<'columns> => {
-  from: {name: table.name, alias: "t1"},
+  from: {name: table.name, alias: "t0"},
   joins: [],
-  columns: mapColumns(table.columns, column => {...column, table: "t1"})->Item,
+  columns: mapColumns(table.columns, column => {...column, table: "t0"})->Item,
   selection: None,
 }
 
@@ -74,7 +74,7 @@ let join1 = (
   joinType,
   getCondition: (('c1, 'columns)) => QueryBuilder_Expr.t,
 ): t<('c1, 'columns)> => {
-  join(q, table, joinType, getCondition, "t2")
+  join(q, table, joinType, getCondition, "t1")
 }
 
 let join2 = (
@@ -83,7 +83,7 @@ let join2 = (
   joinType,
   getCondition: (('c1, 'c2, 'columns)) => QueryBuilder_Expr.t,
 ): t<('c1, 'c2, 'columns)> => {
-  join(q, table, joinType, getCondition, "t3")
+  join(q, table, joinType, getCondition, "t2")
 }
 
 let join3 = (
@@ -92,7 +92,7 @@ let join3 = (
   joinType,
   getCondition: (('c1, 'c2, 'c3, 'columns)) => QueryBuilder_Expr.t,
 ): t<('c1, 'c2, 'c3, 'columns)> => {
-  join(q, table, joinType, getCondition, "t4")
+  join(q, table, joinType, getCondition, "t3")
 }
 
 let where = (q: t<'columns>, getSelection: 'columns => QueryBuilder_Expr.t): t<'columns> => {

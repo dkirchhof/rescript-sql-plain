@@ -417,29 +417,38 @@ let selectNameFromArtist1 = () => {
   let q =
     from(Artists.table)
     ->where(artist => eq(artist.id, Literal(1)))
-    ->select(artist => {"name": artist.name})
+    ->select(artist => {"name": s(artist.name)})
 
   let sql = SQL.fromSelectQuery(q)
 
   log(sql)
 
-  /* let mapper = mapOne(q) */
-  /* let result = connection->SQLite3.prepare(sql)->SQLite3.get->Belt.Option.map(mapper) */
+  let mapper = map(q.projection)
+  let result = connection->SQLite3.prepare(sql)->SQLite3.get->Belt.Option.map(mapper)
 
-  /* log(result) */
+  log(result)
 }
 
-let selectFavorites = () => {
+let selectArtistsWithAlbumsWithSongs = () => {
   open QueryBuilder.Select
+  open QueryBuilder.Expr
 
-  let q = from(Favorites.table)->select(fav => {
-    "userId": s(fav.userId),
-    "songId": s(fav.songId),
-    "date": s(fav.likedAt),
-  })
+  let q =
+    from(Artists.table)
+    ->join1(Albums.table, Left, ((artist, album)) => eq(album.artistId, artist.id))
+    ->join2(Songs.table, Left, ((_artist, album, song)) => eq(song.albumId, album.id))
+    ->select(((artist, album, song)) =>
+      {
+        "artistId": s(artist.id),
+        "artistName": s(artist.name),
+        "albumId": s(album.id),
+        "albumName": s(album.name),
+        "songId": s(song.id),
+        "songName": s(song.name),
+      }
+    )
 
   let sql = SQL.fromSelectQuery(q)
-
   log(sql)
 
   let mapper = map(q.projection)
@@ -448,75 +457,37 @@ let selectFavorites = () => {
   log(result)
 }
 
-/* let selectArtistsWithAlbumsWithSongs = () => { */
-/* open QueryBuilder.Select */
-/* open QueryBuilder.Expr */
+let selectFavoritesOfUser1 = () => {
+  open QueryBuilder.Select
+  open QueryBuilder.Expr
 
-/* let q = */
-/* from(Artists.table) */
-/* ->join1(Albums.table, Left, ((artist, album)) => eq(album.artistId, artist.id)) */
-/* ->join2(Songs.table, Left, ((_artist, album, song)) => eq(song.albumId, album.id)) */
-/* ->select(((artist, album, song)) => */
-/* { */
-/* "id": artist.id, */
-/* "name": artist.name, */
-/* "albums": [ */
-/* { */
-/* "id": album.id, */
-/* "name": album.name, */
-/* "songs": [ */
-/* { */
-/* "id": song.id, */
-/* "name": song.name, */
-/* }, */
-/* ], */
-/* }, */
-/* ], */
-/* } */
-/* ) */
+  let q =
+    from(Favorites.table)
+    ->join1(Songs.table, Inner, ((favorite, song)) => eq(favorite.songId, song.id))
+    ->join2(Albums.table, Inner, ((_favorite, song, album)) => eq(song.albumId, album.id))
+    ->join3(Artists.table, Inner, ((_favorite, _song, album, artist)) => eq(album.artistId, artist.id))
+    ->select(((favorite, song, album, artist)) =>
+      {
+        "songName": s(song.name),
+        "albumName": s(album.name),
+        "artistName": s(artist.name),
+        "likedAt": s(favorite.likedAt),
+      }
+    )
 
-/* let sql = SQL.fromSelectQuery(q) */
-/* log(sql) */
+  let sql = SQL.fromSelectQuery(q)
+  log(sql)
 
-/* let mapper = mapMany(q) */
-/* let result = connection->SQLite3.prepare(sql)->SQLite3.all->mapper */
+  let mapper = map(q.projection)
+  let result = connection->SQLite3.prepare(sql)->SQLite3.all->Js.Array2.map(mapper)
 
-/* log(result) */
-/* } */
-
-/* let selectFavoritesOfUser1 = () => { */
-/* open QueryBuilder.Select */
-/* open QueryBuilder.Expr */
-
-/* let q = */
-/* from(Favorites.table) */
-/* ->join1(Songs.table, Inner, ((favorite, song)) => eq(favorite.songId, song.id)) */
-/* ->join2(Albums.table, Inner, ((_favorite, song, album)) => eq(song.albumId, album.id)) */
-/* ->join3(Artists.table, Inner, ((_favorite, _song, album, artist)) => */
-/* eq(album.artistId, artist.id) */
-/* ) */
-/* ->select(((favorite, song, _album, artist)) => */
-/* { */
-/* "song": song, */
-/* "artist": artist, */
-/* "likedAt": favorite.likedAt, */
-/* } */
-/* ) */
-
-/* let sql = SQL.fromSelectQuery(q) */
-/* log(sql) */
-
-/* let mapper = mapMany(q) */
-/* let result = connection->SQLite3.prepare(sql)->SQLite3.all->mapper */
-
-/* log(result) */
-/* } */
+  log(result)
+}
 
 createTables()
 insertData()
 updateData()
 deleteData()
-selectFavorites()
-/* selectNameFromArtist1() */
-/* selectArtistsWithAlbumsWithSongs() */
-/* selectFavoritesOfUser1() */
+selectNameFromArtist1()
+selectArtistsWithAlbumsWithSongs()
+selectFavoritesOfUser1()
