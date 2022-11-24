@@ -1,93 +1,51 @@
 type rec t =
-  /* | And(array<t>) */
-  /* | Or(array<t>) */
+  | And(array<t>)
+  | Or(array<t>)
   | Equal(Node.unknownNode, Node.unknownNode)
-  /* | NotEqual(Ref.anyRef, Ref.anyRef) */
-  /* | GreaterThan(Ref.anyRef, Ref.anyRef) */
-  /* | GreaterThanEqual(Ref.anyRef, Ref.anyRef) */
-  /* | LessThan(Ref.anyRef, Ref.anyRef) */
-  /* | LessThanEqual(Ref.anyRef, Ref.anyRef) */
-  /* | Between(Ref.anyRef, Ref.anyRef, Ref.anyRef) */
-  /* | NotBetween(Ref.anyRef, Ref.anyRef, Ref.anyRef) */
-  /* | In(Ref.anyRef, array<Ref.anyRef>) */
-  /* | NotIn(Ref.anyRef, array<Ref.anyRef>) */
+  | NotEqual(Node.unknownNode, Node.unknownNode)
+  | GreaterThan(Node.unknownNode, Node.unknownNode)
+  | GreaterThanEqual(Node.unknownNode, Node.unknownNode)
+  | LessThan(Node.unknownNode, Node.unknownNode)
+  | LessThanEqual(Node.unknownNode, Node.unknownNode)
+  | Between(Node.unknownNode, Node.unknownNode, Node.unknownNode)
+  | NotBetween(Node.unknownNode, Node.unknownNode, Node.unknownNode)
+  | In(Node.unknownNode, array<Node.unknownNode>)
+  | NotIn(Node.unknownNode, array<Node.unknownNode>)
 
-/* let and_ = ands => And(ands) */
-/* let or_ = ors => Or(ors) */
+let and_ = expressions => And(expressions)
+let or = expressions => Or(expressions)
 
-let eq = (left: 't, right: 't) => Equal(left->Node.toUnknown, right->Node.toUnknown)
-/* let \"==" = eq */
+let equal = (left: 't, right: 't) => Equal(left->Node.toUnknown, right->Node.toUnknown)
+let notEqual = (left: 't, right: 't) => NotEqual(left->Node.toUnknown, right->Node.toUnknown)
 
-/* let neq = (left, right) => NotEqual(Ref.toAnyRef(left), Ref.toAnyRef(right)) */
-/* let gt = (left, right) => GreaterThan(Ref.toAnyRef(left), Ref.toAnyRef(right)) */
-/* let gte = (left, right) => GreaterThanEqual(Ref.toAnyRef(left), Ref.toAnyRef(right)) */
-/* let lt = (left, right) => LessThan(Ref.toAnyRef(left), Ref.toAnyRef(right)) */
-/* let lte = (left, right) => LessThanEqual(Ref.toAnyRef(left), Ref.toAnyRef(right)) */
+let greaterThan = (left: 't, right: 't) => GreaterThan(left->Node.toUnknown, right->Node.toUnknown)
 
-/* let btw = (left, r1, r2) => Between( */
-/*   Ref.toAnyRef(left), */
-/*   Ref.toAnyRef(r1), */
-/*   Ref.toAnyRef(r2), */
-/* ) */
+let greaterThanEqual = (left: 't, right: 't) => GreaterThanEqual(
+  left->Node.toUnknown,
+  right->Node.toUnknown,
+)
 
-/* let nbtw = (left, r1, r2) => NotBetween( */
-/*   Ref.toAnyRef(left), */
-/*   Ref.toAnyRef(r1), */
-/*   Ref.toAnyRef(r2), */
-/* ) */
+let lessThan = (left: 't, right: 't) => LessThan(left->Node.toUnknown, right->Node.toUnknown)
 
-/* let in_ = (left, rights) => In( */
-/*   Ref.toAnyRef(left), */
-/*   Js.Array2.map(rights, Ref.toAnyRef), */
-/* ) */
+let lessThanEqual = (left: 't, right: 't) => LessThanEqual(
+  left->Node.toUnknown,
+  right->Node.toUnknown,
+)
 
-/* let nin_ = (left, rights) => In( */
-/*   Ref.toAnyRef(left), */
-/*   Js.Array2.map(rights, Ref.toAnyRef), */
-/* ) */
+/* let \"==" = equal */
+/* let \"!=" = notEqual */
 
-/* let leftRightToSQL = (left, op, right, queryToString) => { */
-/*   let ls = Ref.toSQL(left, queryToString) */
-/*   let rs = Ref.toSQL(right, queryToString) */
+let between = (column, min, max) => Between(
+  column->Node.toUnknown,
+  min->Node.toUnknown,
+  max->Node.toUnknown,
+)
 
-/*   `${ls} ${op} ${rs}` */
-/* } */
+let notBetween = (column, min, max) => NotBetween(
+  column->Node.toUnknown,
+  min->Node.toUnknown,
+  max->Node.toUnknown,
+)
 
-/* let betweenToSQL = (left, bool, r1, r2, queryToString) => { */
-/*   let ls = Ref.toSQL(left, queryToString) */
-/*   let r1s = Ref.toSQL(r1, queryToString) */
-/*   let r2s = Ref.toSQL(r2, queryToString) */
-
-/*   if bool { */
-/*     `${ls} BETWEEN ${r1s} AND ${r2s}` */
-/*   } else { */
-/*     `${ls} NOT BETWEEN ${r1s} AND ${r2s}` */
-/*   } */
-/* } */
-
-
-/* let rec toSQL = (expr, queryToString) => */
-/*   switch expr { */
-/*   | And(ands) => combine(ands, "AND", queryToString) */
-/*   | Or(ors) => combine(ors, "OR", queryToString) */
-/*   | Equal(left, right) => leftRightToSQL(left, "=", right, queryToString) */
-/*   | NotEqual(left, right) => leftRightToSQL(left, "!=", right, queryToString) */
-/*   | GreaterThan(left, right) => leftRightToSQL(left, ">", right, queryToString) */
-/*   | GreaterThanEqual(left, right) => leftRightToSQL(left, ">=", right, queryToString) */
-/*   | LessThan(left, right) => leftRightToSQL(left, "<", right, queryToString) */
-/*   | LessThanEqual(left, right) => leftRightToSQL(left, "<=", right, queryToString) */
-/*   | Between(left, r1, r2) => betweenToSQL(left, true, r1, r2, queryToString) */
-/*   | NotBetween(left, r1, r2) => betweenToSQL(left, false, r1, r2, queryToString) */
-/*   | In(left, rights) => leftRightsToSQL(left, "IN", rights, queryToString) */
-/*   | NotIn(left, rights) => leftRightsToSQL(left, "NOT IN", rights, queryToString) */
-/*   } */
-
-/* and combine = (exprs, bool, queryToString) => */
-/*   `(${Belt.Array.joinWith(exprs, ` ${bool} `, toSQL(_, queryToString))})` */
-
-/* and leftRightsToSQL = (left, op, rights, queryToString) => { */
-/*   let ls = Ref.toSQL(left, queryToString) */
-/*   let rs = Belt.Array.joinWith(rights, ", ", Ref.toSQL(_, queryToString)) */
-
-/*   `${ls} ${op}(${rs})` */
-/* } */
+let in_ = (column, values) => In(column->Node.toUnknown, values->Node.toUnknownArray)
+let notIn = (column, values) => NotIn(column->Node.toUnknown, values->Node.toUnknownArray)

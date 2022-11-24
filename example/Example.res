@@ -388,7 +388,7 @@ let updateData = () => {
       id: Skip,
       name: Literal("DELETEME"),
     })
-    ->where(c => eq(c.name, Literal("UPDATEME")))
+    ->where(c => equal(c.name, Literal("UPDATEME")))
     ->SQL.fromUpdateQuery
 
   log(q1)
@@ -402,7 +402,7 @@ let deleteData = () => {
   open QueryBuilder.Expr
 
   let q1 =
-    deleteFrom(Artists.table)->where(c => eq(c.name, Literal("DELETEME")))->SQL.fromDeleteQuery
+    deleteFrom(Artists.table)->where(c => equal(c.name, Literal("DELETEME")))->SQL.fromDeleteQuery
 
   log(q1)
   log("")
@@ -416,7 +416,7 @@ let selectNameFromArtist1 = () => {
 
   let q =
     from(Artists.table)
-    ->where(artist => eq(artist.id, Literal(1)))
+    ->where(artist => equal(artist.id, Literal(1)))
     ->select(artist => {"name": s(artist.name)})
 
   let sql = SQL.fromSelectQuery(q)
@@ -435,8 +435,8 @@ let selectArtistsWithAlbumsWithSongs = () => {
 
   let q =
     from(Artists.table)
-    ->join1(Albums.table, Left, ((artist, album)) => eq(album.artistId, artist.id))
-    ->join2(Songs.table, Left, ((_artist, album, song)) => eq(song.albumId, album.id))
+    ->join1(Albums.table, Left, ((artist, album)) => equal(album.artistId, artist.id))
+    ->join2(Songs.table, Left, ((_artist, album, song)) => equal(song.albumId, album.id))
     ->select(((artist, album, song)) =>
       {
         "artistId": s(artist.id),
@@ -463,9 +463,11 @@ let selectFavoritesOfUser1 = () => {
 
   let q =
     from(Favorites.table)
-    ->join1(Songs.table, Inner, ((favorite, song)) => eq(favorite.songId, song.id))
-    ->join2(Albums.table, Inner, ((_favorite, song, album)) => eq(song.albumId, album.id))
-    ->join3(Artists.table, Inner, ((_favorite, _song, album, artist)) => eq(album.artistId, artist.id))
+    ->join1(Songs.table, Inner, ((favorite, song)) => equal(favorite.songId, song.id))
+    ->join2(Albums.table, Inner, ((_favorite, song, album)) => equal(song.albumId, album.id))
+    ->join3(Artists.table, Inner, ((_favorite, _song, album, artist)) =>
+      equal(album.artistId, artist.id)
+    )
     ->select(((favorite, song, album, artist)) =>
       {
         "songName": s(song.name),
@@ -484,6 +486,32 @@ let selectFavoritesOfUser1 = () => {
   log(result)
 }
 
+let expressionsTest = () => {
+  open QueryBuilder.Select
+  open QueryBuilder.Expr
+
+  let expressions = [
+    (c: Artists.columns) => equal(c.id, Literal(1)),
+    (c: Artists.columns) => notEqual(c.id, Literal(1)),
+    (c: Artists.columns) => greaterThan(c.id, Literal(1)),
+    (c: Artists.columns) => greaterThanEqual(c.id, Literal(1)),
+    (c: Artists.columns) => lessThan(c.id, Literal(1)),
+    (c: Artists.columns) => lessThanEqual(c.id, Literal(1)),
+    (c: Artists.columns) => between(c.id, Literal(1), Literal(2)),
+    (c: Artists.columns) => notBetween(c.id, Literal(1), Literal(2)),
+    (c: Artists.columns) => in_(c.id, [Literal(1), Literal(2)]),
+    (c: Artists.columns) => notIn(c.id, [Literal(1), Literal(2)]),
+    (c: Artists.columns) => and_([equal(c.id, Literal(1)), notEqual(c.name, Literal("test"))]),
+    (c: Artists.columns) => or([equal(c.id, Literal(1)), notEqual(c.name, Literal("test"))]),
+  ]
+
+  expressions->Js.Array2.forEach(expression => {
+    from(Artists.table)->where(expression)->select(c => c)->SQL.fromSelectQuery->Js.log
+
+    Js.log("")
+  })
+}
+
 createTables()
 insertData()
 updateData()
@@ -491,3 +519,4 @@ deleteData()
 selectNameFromArtist1()
 selectArtistsWithAlbumsWithSongs()
 selectFavoritesOfUser1()
+expressionsTest()

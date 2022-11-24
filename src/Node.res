@@ -6,6 +6,7 @@ type stringNode = t<string, string>
 type dateNode = t<Js.Date.t, string>
 
 external toUnknown: t<_> => unknownNode = "%identity"
+external toUnknownArray: array<t<_>> => array<unknownNode> = "%identity"
 external dictFromRecord: 'a => Js.Dict.t<unknownNode> = "%identity"
 external recordFromDict: Js.Dict.t<unknownNode> => 'a = "%identity"
 
