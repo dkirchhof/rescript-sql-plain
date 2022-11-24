@@ -512,6 +512,13 @@ let expressionsTest = () => {
   })
 }
 
+let limitAndOffsetTest = () => {
+  open QueryBuilder.Select
+
+  from(Artists.table)->limit(10)->offset(5)->select(c => c)->SQL.fromSelectQuery->Js.log
+  Js.log("")
+}
+
 createTables()
 insertData()
 updateData()
@@ -520,3 +527,4 @@ selectNameFromArtist1()
 selectArtistsWithAlbumsWithSongs()
 selectFavoritesOfUser1()
 expressionsTest()
+limitAndOffsetTest()

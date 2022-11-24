@@ -221,6 +221,8 @@ let fromSelectQuery = (q: QueryBuilder.Select.tx<_>) => {
   ->addS(0, `FROM ${sourceToSQL(q.from)}`)
   ->addM(0, q.joins->Js.Array2.map(joinToSQL))
   ->addSO(0, q.selection->Belt.Option.map(expr => `WHERE ${expressionToSQL(expr)}`))
+  ->addSO(0, q.limit->Belt.Option.map(l => `LIMIT ${Belt.Int.toString(l)}`))
+  ->addSO(0, q.offset->Belt.Option.map(o => `OFFSET ${Belt.Int.toString(o)}`))
   ->build("\n")
 }
 

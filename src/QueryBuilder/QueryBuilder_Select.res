@@ -16,12 +16,16 @@ type t<'columns> = {
   joins: array<join>,
   columns: Utils.ItemOrArray.t<Js.Dict.t<Any.t>>,
   selection: option<QueryBuilder_Expr.t>,
+  limit: option<int>,
+  offset: option<int>,
 }
 
 type tx<'result> = {
   from: source,
   joins: array<join>,
   selection: option<QueryBuilder_Expr.t>,
+  limit: option<int>,
+  offset: option<int>,
   projection: 'result,
 }
 
@@ -66,6 +70,8 @@ let from = (table: Schema.Table.t<'columns, _>): t<'columns> => {
   joins: [],
   columns: mapColumns(table.columns, column => {...column, table: "t0"})->Item,
   selection: None,
+  limit: None,
+  offset: None,
 }
 
 let join1 = (
@@ -101,10 +107,25 @@ let where = (q: t<'columns>, getSelection: 'columns => QueryBuilder_Expr.t): t<'
   {...q, selection: Some(selection)}
 }
 
+let limit = (q: t<'columns>, limit): t<'columns> => {
+  {...q, limit: Some(limit)}
+}
+
+let offset = (q: t<'columns>, offset): t<'columns> => {
+  {...q, offset: Some(offset)}
+}
+
 let select = (q: t<'columns>, getProjection: 'columns => 'result): tx<'result> => {
   let projection = Utils.ItemOrArray.apply(q.columns, getProjection)
 
-  {from: q.from, joins: q.joins, selection: q.selection, projection}
+  {
+    from: q.from,
+    joins: q.joins,
+    selection: q.selection,
+    limit: q.limit,
+    offset: q.offset,
+    projection,
+  }
 }
 
 external s: Node.t<'a, _> => 'a = "%identity"
