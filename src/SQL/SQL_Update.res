@@ -13,6 +13,6 @@ let fromUpdateQuery = (q: QueryBuilder.Update.tx<_>) => {
   make()
   ->addS(0, `UPDATE ${q.tableName}`)
   ->addS(2, `SET ${patchString}`)
-  ->addSO(2, q.selection->Belt.Option.map(expr => `WHERE ${SQL_Common.expressionToSQL(expr)}`))
+  ->addSO(2, q.selection->Belt.Option.map(expr => `WHERE ${SQL_Expr.expressionToSQL(expr)}`))
   ->build("\n")
 }

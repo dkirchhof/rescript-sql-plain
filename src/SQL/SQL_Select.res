@@ -32,7 +32,7 @@ let joinToSQL = (join: QueryBuilder.Select.join) => {
   let joinTypeString = joinTypeToSQL(join.joinType)
   let tableName = join.source.name
   let tableAlias = join.source.alias
-  let exprString = SQL_Common.expressionToSQL(join.on)
+  let exprString = SQL_Expr.expressionToSQL(join.on)
 
   `${joinTypeString} ${tableName} AS ${tableAlias} ON ${exprString}`
 }
@@ -42,11 +42,11 @@ let joinsToSQL = joins => {
 }
 
 let selectionToSQL = selection => {
-  selection->Belt.Option.map(expr => `WHERE ${SQL_Common.expressionToSQL(expr)}`)
+  selection->Belt.Option.map(expr => `WHERE ${SQL_Expr.expressionToSQL(expr)}`)
 }
 
 let havingToSQL = having => {
-  having->Belt.Option.map(expr => `HAVING ${SQL_Common.expressionToSQL(expr)}`)
+  having->Belt.Option.map(expr => `HAVING ${SQL_Expr.expressionToSQL(expr)}`)
 }
 
 let groupToSQL = (group: Node.unknownNode) => {
