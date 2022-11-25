@@ -4,6 +4,7 @@ type source = {
 }
 
 type joinType = Inner | Left
+type direction = Asc | Desc
 
 type join = {
   source: source,
@@ -11,11 +12,19 @@ type join = {
   on: QueryBuilder_Expr.t,
 }
 
+type order = {
+  column: Node.unknownNode,
+  direction: direction,
+}
+
 type t<'columns> = {
   from: source,
   joins: array<join>,
   columns: Utils.ItemOrArray.t<Js.Dict.t<Any.t>>,
   selection: option<QueryBuilder_Expr.t>,
+  having: option<QueryBuilder_Expr.t>,
+  orderBy: option<array<order>>,
+  groupBy: option<array<Node.unknownNode>>,
   limit: option<int>,
   offset: option<int>,
 }
@@ -24,6 +33,9 @@ type tx<'result> = {
   from: source,
   joins: array<join>,
   selection: option<QueryBuilder_Expr.t>,
+  having: option<QueryBuilder_Expr.t>,
+  orderBy: option<array<order>>,
+  groupBy: option<array<Node.unknownNode>>,
   limit: option<int>,
   offset: option<int>,
   projection: 'result,
@@ -70,6 +82,9 @@ let from = (table: Schema.Table.t<'columns, _>): t<'columns> => {
   joins: [],
   columns: mapColumns(table.columns, column => {...column, table: "t0"})->Item,
   selection: None,
+  having: None,
+  orderBy: None,
+  groupBy: None,
   limit: None,
   offset: None,
 }
@@ -107,6 +122,37 @@ let where = (q: t<'columns>, getSelection: 'columns => QueryBuilder_Expr.t): t<'
   {...q, selection: Some(selection)}
 }
 
+let having = (q: t<'columns>, getHaving: 'columns => QueryBuilder_Expr.t): t<'columns> => {
+  let having = Utils.ItemOrArray.apply(q.columns, getHaving)
+
+  {...q, having: Some(having)}
+}
+
+let addOrderBy = (q: t<'columns>, getColumn: 'columns => Node.t<_>, direction): t<'columns> => {
+  let columnAndDirection = {
+    column: Utils.ItemOrArray.apply(q.columns, getColumn)->Node.toUnknown,
+    direction,
+  }
+
+  let orderBy = switch q.orderBy {
+  | Some(old) => Js.Array2.concat(old, [columnAndDirection])
+  | None => [columnAndDirection]
+  }
+
+  {...q, orderBy: Some(orderBy)}
+}
+
+let addGroupBy = (q: t<'columns>, getColumn: 'columns => Node.t<_>): t<'columns> => {
+  let column = Utils.ItemOrArray.apply(q.columns, getColumn)->Node.toUnknown
+
+  let groupBy = switch q.groupBy {
+  | Some(old) => Js.Array2.concat(old, [column])
+  | None => [column]
+  }
+
+  {...q, groupBy: Some(groupBy)}
+}
+
 let limit = (q: t<'columns>, limit): t<'columns> => {
   {...q, limit: Some(limit)}
 }
@@ -122,6 +168,9 @@ let select = (q: t<'columns>, getProjection: 'columns => 'result): tx<'result> =
     from: q.from,
     joins: q.joins,
     selection: q.selection,
+    having: q.having,
+    orderBy: q.orderBy,
+    groupBy: q.groupBy,
     limit: q.limit,
     offset: q.offset,
     projection,

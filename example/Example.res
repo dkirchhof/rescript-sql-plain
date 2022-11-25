@@ -196,7 +196,7 @@ let insertData = () => {
       {id: Literal(4), name: Literal("Iron Maiden")},
       {id: Literal(5), name: Literal("UPDATEME")},
     ])
-    ->SQL.fromInsertIntoQuery
+    ->SQL.fromInsertQuery
 
   let q2 =
     insertInto(Albums.table)
@@ -214,7 +214,7 @@ let insertData = () => {
       /* {id: 11, artistId: 4, name: "The Number of the Beast", year: 1982}, */
       /* {id: 12, artistId: 4, name: "Fear of the Dark", year: 1992}, */
     ])
-    ->SQL.fromInsertIntoQuery
+    ->SQL.fromInsertQuery
 
   let q3 =
     insertInto(Songs.table)
@@ -341,12 +341,12 @@ let insertData = () => {
       /* {id: 115, albumId: 9, name: "Shining", duration: "2:59"}, */
       /* {id: 116, albumId: 9, name: "Don't Open 'Til Doomsday + Hell Night", duration: "8:58"}, */
     ])
-    ->SQL.fromInsertIntoQuery
+    ->SQL.fromInsertQuery
 
   let q4 =
     insertInto(Users.table)
     ->values([{id: Literal(1), name: Literal("John Doe")}])
-    ->SQL.fromInsertIntoQuery
+    ->SQL.fromInsertQuery
 
   let q5 =
     insertInto(Favorites.table)
@@ -354,7 +354,7 @@ let insertData = () => {
       {userId: Literal(1), songId: Literal(1), likedAt: Literal(Js.Date.fromString("2022-01-01"))},
       /* {userId: 1, songId: 2, likedAt: Js.Date.fromString("2022-02-01")}, */
     ])
-    ->SQL.fromInsertIntoQuery
+    ->SQL.fromInsertQuery
 
   log(q1)
   log("")
@@ -519,6 +519,34 @@ let limitAndOffsetTest = () => {
   Js.log("")
 }
 
+let orderByTest = () => {
+  open QueryBuilder.Select
+
+  from(Artists.table)
+  ->addOrderBy(c => c.id, Asc)
+  ->addOrderBy(c => c.name, Desc)
+  ->select(c => c)
+  ->SQL.fromSelectQuery
+  ->Js.log
+
+  Js.log("")
+}
+
+let groupByTest = () => {
+  open QueryBuilder.Select
+  open QueryBuilder.Expr
+
+  from(Artists.table)
+  ->addGroupBy(c => c.id)
+  ->addGroupBy(c => c.name)
+  ->having(c => equal(c.id, Literal(1)))
+  ->select(c => c)
+  ->SQL.fromSelectQuery
+  ->Js.log
+
+  Js.log("")
+}
+
 createTables()
 insertData()
 updateData()
@@ -528,3 +556,5 @@ selectArtistsWithAlbumsWithSongs()
 selectFavoritesOfUser1()
 expressionsTest()
 limitAndOffsetTest()
+orderByTest()
+groupByTest()
