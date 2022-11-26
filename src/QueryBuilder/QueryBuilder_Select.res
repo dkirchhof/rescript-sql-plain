@@ -41,20 +41,20 @@ type tx<'result> = {
   projection: 'result,
 }
 
-let mapColumns = (columns, f) =>
-  columns
-  ->Node.dictFromRecord
-  ->Js.Dict.entries
-  ->Js.Array2.map(((columnName, node)) => {
-    let column = Node.getColumnExn(node)
-    let mapped = column->f->Node.Column
-
-    (columnName, mapped)
-  })
-  ->Js.Dict.fromArray
-  ->Node.recordFromDict
-
 %%private(
+  let mapColumns = (columns, f) =>
+    columns
+    ->Node.dictFromRecord
+    ->Js.Dict.entries
+    ->Js.Array2.map(((columnName, node)) => {
+      let column = Node.getColumnExn(node)
+      let mapped = column->f->Node.Column
+
+      (columnName, mapped)
+    })
+    ->Js.Dict.fromArray
+    ->Node.recordFromDict
+
   let join = (q, table: Schema.Table.t<_>, joinType, getCondition, alias) => {
     let newColumns = Utils.ItemOrArray.concat(
       q.columns,
@@ -74,6 +74,12 @@ let mapColumns = (columns, f) =>
       joins: newJoins,
       columns: newColumns,
     }
+  }
+
+  let aggregate = (node, aggregation) => {
+    let columnNode = node->Node.getColumnExn
+
+    {...columnNode, aggregation}->Node.Column
   }
 )
 
@@ -178,6 +184,14 @@ let select = (q: t<'columns>, getProjection: 'columns => 'result): tx<'result> =
 }
 
 external s: Node.t<'a, _> => 'a = "%identity"
+
+module Agg = {
+  let count = (node): int => aggregate(node, Some(Count))->Obj.magic
+  let sum = (node): float => aggregate(node, Some(Sum))->Obj.magic
+  let avg = (node): float => aggregate(node, Some(Avg))->Obj.magic
+  let min = node => aggregate(node, Some(Min))->s
+  let max = node => aggregate(node, Some(Max))->s
+}
 
 let map = (projection: 'projection, row): 'projection => {
   row->Utils.mapEntries(((columnName, value)) => {

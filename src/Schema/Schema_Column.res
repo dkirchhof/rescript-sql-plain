@@ -3,12 +3,15 @@ type converter<'res, 'db> = {
   resToDB: 'res => 'db,
 }
 
+type aggregationType = Count | Sum | Avg | Min | Max
+
 type t<'res, 'db> = {
   table: string,
   name: string,
   dbType: [#VARCHAR | #INTEGER | #TEXT],
   size: option<int>,
   converter: option<converter<'res, 'db>>,
+  aggregation: option<aggregationType>,
 }
 
 type intColumn = t<int, int>
@@ -23,6 +26,7 @@ let varchar = (options): stringColumn => {
   dbType: #VARCHAR,
   size: options.size,
   converter: None,
+  aggregation: None,
 }
 
 let text = (options): stringColumn => {
@@ -31,6 +35,7 @@ let text = (options): stringColumn => {
   dbType: #TEXT,
   size: options.size,
   converter: None,
+  aggregation: None,
 }
 
 let integer = (options): intColumn => {
@@ -39,6 +44,7 @@ let integer = (options): intColumn => {
   dbType: #INTEGER,
   size: options.size,
   converter: None,
+  aggregation: None,
 }
 
 let date = (options): dateColumn => {
@@ -50,4 +56,5 @@ let date = (options): dateColumn => {
     dbToRes: Js.Date.fromString,
     resToDB: Js.Date.toISOString,
   }),
+  aggregation: None,
 }

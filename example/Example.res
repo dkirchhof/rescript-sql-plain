@@ -563,6 +563,30 @@ let subQueryTest = () => {
   Js.log("")
 }
 
+let aggregationTest = () => {
+  open QueryBuilder.Select
+
+  let q = from(Artists.table)
+  ->select(c =>
+    {
+      "count": Agg.count(c.name),
+      "sum": Agg.sum(c.name),
+      "avg": Agg.avg(c.name),
+      "min": Agg.min(c.name),
+      "max": Agg.max(c.name),
+    }
+  )
+
+  let sql = SQL.fromSelectQuery(q)
+  log(sql)
+
+  let mapper = map(q.projection)
+  let result = connection->SQLite3.prepare(sql)->SQLite3.all->Js.Array2.map(mapper)
+
+  log(result)
+  log("")
+}
+
 createTables()
 insertData()
 updateData()
@@ -575,3 +599,4 @@ limitAndOffsetTest()
 orderByTest()
 groupByTest()
 subQueryTest()
+aggregationTest()

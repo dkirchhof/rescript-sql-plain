@@ -1,5 +1,18 @@
 open StringBuilder
 
+let withAggregation = (string, aggregation) => {
+  open Schema.Column
+
+  switch aggregation {
+  | None => string
+  | Some(Count) => `COUNT(${string})`
+  | Some(Sum) => `SUM(${string})`
+  | Some(Avg) => `AVG(${string})`
+  | Some(Min) => `MIN(${string})`
+  | Some(Max) => `MAX(${string})`
+  }
+}
+
 let projectionToSQL = projection => {
   let columns =
     make()
@@ -10,7 +23,8 @@ let projectionToSQL = projection => {
       ->Js.Dict.entries
       ->Js.Array2.map(((alias, node)) => {
         switch node {
-        | Column(column) => `${column.table}.${column.name} AS ${alias}`
+        | Column(column) =>
+          withAggregation(`${column.table}.${column.name}`, column.aggregation) ++ ` AS ${alias}`
         | _ => Js.Exn.raiseError("not implemented yet")
         }
       }),
