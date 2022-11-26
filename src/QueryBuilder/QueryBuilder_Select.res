@@ -193,9 +193,9 @@ module Agg = {
   let max = node => aggregate(node, Some(Max))->s
 }
 
-let map = (projection: 'projection, row): 'projection => {
+let map = (q: tx<'projection>, row): 'projection => {
   row->Utils.mapEntries(((columnName, value)) => {
-    let node = projection->Node.dictFromRecord->Js.Dict.unsafeGet(columnName)
+    let node = q.projection->Node.dictFromRecord->Js.Dict.unsafeGet(columnName)
 
     let convertedValue = switch node {
     | Column({converter: Some(converter)}) => value->converter.dbToRes

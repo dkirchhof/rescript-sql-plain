@@ -423,7 +423,7 @@ let selectNameFromArtist1 = () => {
 
   log(sql)
 
-  let mapper = map(q.projection)
+  let mapper = map(q)
   let result = connection->SQLite3.prepare(sql)->SQLite3.get->Belt.Option.map(mapper)
 
   log(result)
@@ -451,7 +451,7 @@ let selectArtistsWithAlbumsWithSongs = () => {
   let sql = SQL.fromSelectQuery(q)
   log(sql)
 
-  let mapper = map(q.projection)
+  let mapper = map(q)
   let result = connection->SQLite3.prepare(sql)->SQLite3.all->Js.Array2.map(mapper)
 
   log(result)
@@ -480,7 +480,7 @@ let selectFavoritesOfUser1 = () => {
   let sql = SQL.fromSelectQuery(q)
   log(sql)
 
-  let mapper = map(q.projection)
+  let mapper = map(q)
   let result = connection->SQLite3.prepare(sql)->SQLite3.all->Js.Array2.map(mapper)
 
   log(result)
@@ -580,7 +580,7 @@ let aggregationTest = () => {
   let sql = SQL.fromSelectQuery(q)
   log(sql)
 
-  let mapper = map(q.projection)
+  let mapper = map(q)
   let result = connection->SQLite3.prepare(sql)->SQLite3.all->Js.Array2.map(mapper)
 
   log(result)
