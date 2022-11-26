@@ -4,6 +4,7 @@ let simpleExpressionToSQL = (left, right, operator) => {
   let valueString = switch right {
   | Node.Literal(value) => SQL_Common.convertIfNeccessary(value, column)->Utils.stringify
   | Node.Column(column) => `${column.table}.${column.name}`
+  | Node.Query(sql) => `(${sql->Obj.magic})`
   | _ => Js.Exn.raiseError("not implemented yet")
   }
 
@@ -16,12 +17,14 @@ let betweenExpressionToSQL = (column, min, max, negate) => {
   let minString = switch min {
   | Node.Literal(value) => SQL_Common.convertIfNeccessary(value, column)->Utils.stringify
   | Node.Column(column) => `${column.table}.${column.name}`
+  | Node.Query(sql) => `(${sql->Obj.magic})`
   | _ => Js.Exn.raiseError("not implemented yet")
   }
 
   let maxString = switch max {
   | Node.Literal(value) => SQL_Common.convertIfNeccessary(value, column)->Utils.stringify
   | Node.Column(column) => `${column.table}.${column.name}`
+  | Node.Query(sql) => `(${sql->Obj.magic})`
   | _ => Js.Exn.raiseError("not implemented yet")
   }
 
@@ -37,6 +40,7 @@ let inExpressionToSQL = (column, values, negate) => {
     switch node {
     | Node.Literal(value) => SQL_Common.convertIfNeccessary(value, column)->Utils.stringify
     | Node.Column(column) => `${column.table}.${column.name}`
+    | Node.Query(sql) => `(${sql->Obj.magic})`
     | _ => Js.Exn.raiseError("not implemented yet")
     }
   })

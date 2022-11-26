@@ -1,4 +1,4 @@
-type t<'res, 'db> = Skip | Column(Schema_Column.t<'res, 'db>) | Literal('res)
+type t<'res, 'db> = Skip | Query('res) | Column(Schema_Column.t<'res, 'db>) | Literal('res)
 
 type unknownNode = t<unknown, unknown>
 type intNode = t<int, int>

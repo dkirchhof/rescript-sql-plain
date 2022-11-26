@@ -547,6 +547,22 @@ let groupByTest = () => {
   Js.log("")
 }
 
+let subQueryTest = () => {
+  open QueryBuilder.Select
+  open QueryBuilder.Expr
+  open SubQueryBuilder
+
+  from(Artists.table)
+  ->where(c =>
+    equal(c.id, from(Artists.table)->where(c => equal(c.id, Literal(1)))->selectOne(c => c.id))
+  )
+  ->select(c => c)
+  ->SQL.fromSelectQuery
+  ->Js.log
+
+  Js.log("")
+}
+
 createTables()
 insertData()
 updateData()
@@ -558,3 +574,4 @@ expressionsTest()
 limitAndOffsetTest()
 orderByTest()
 groupByTest()
+subQueryTest()
