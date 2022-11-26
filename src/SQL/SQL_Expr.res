@@ -40,7 +40,7 @@ let inExpressionToSQL = (column, values, negate) => {
     switch node {
     | Node.Literal(value) => SQL_Common.convertIfNeccessary(value, column)->Utils.stringify
     | Node.Column(column) => `${column.table}.${column.name}`
-    | Node.Query(sql) => `(${sql->Obj.magic})`
+    | Node.Query(sql) => `${sql->Obj.magic}`
     | _ => Js.Exn.raiseError("not implemented yet")
     }
   })

@@ -554,7 +554,7 @@ let subQueryTest = () => {
 
   from(Artists.table)
   ->where(c =>
-    equal(c.id, from(Artists.table)->where(c => equal(c.id, Literal(1)))->selectOne(c => c.id))
+    equal(c.id, from(Artists.table)->where(c => equal(c.id, Literal(1)))->make(c => c.id))
   )
   ->select(c => c)
   ->SQL.fromSelectQuery
