@@ -52,7 +52,9 @@ let fromCreateTableQuery = (q: QueryBuilder.CreateTable.t<_>) => {
           | None => ""
           }
 
-          `${name} ${(column.dbType :> string)}${sizeString} NOT NULL`
+          let notNullString = column.nullable ? "" : " NOT NULL"
+
+          `${name} ${(column.dbType :> string)}${sizeString}${notNullString}`
         | _ => Js.Exn.raiseError("This node should be a column.")
         }
       ),

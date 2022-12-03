@@ -55,6 +55,10 @@ let objToRefsDict = obj => {
 
 let stringify: 'a => string = %raw(`
   function(value) {
+    if (value === null) {
+      return "NULL";
+    }
+
     if (typeof value === "string") {
       return "'" + value.replaceAll("'", "''") + "'";
     }
