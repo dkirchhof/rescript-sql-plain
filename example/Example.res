@@ -415,7 +415,7 @@ let selectNameFromArtist1 = () => {
   let q =
     from(Artists.table)
     ->where(artist => equal(artist.id, Literal(1)))
-    ->select(artist => {"name": s(artist.name)})
+    ->select(artist => {"name": column(artist.name)})
 
   let sql = SQL.fromSelectQuery(q)
 
@@ -429,20 +429,19 @@ let selectNameFromArtist1 = () => {
 
 let selectArtistsWithAlbumsWithSongs = () => {
   open QueryBuilder.Select
-  open QueryBuilder.Expr
 
   let q =
     from(Artists.table)
-    ->join1(Albums.table, Left, ((artist, album)) => equal(album.artistId, Column(artist.id)))
-    ->join2(Songs.table, Left, ((_artist, album, song)) => equal(song.albumId, Column(album.id)))
+    ->join1(Albums.table, Left, ((artist, album)) => (album.artistId, artist.id))
+    ->join2(Songs.table, Left, ((_artist, album, song)) => (song.albumId, album.id))
     ->select(((artist, album, song)) =>
       {
-        "artistId": s(artist.id),
-        "artistName": s(artist.name),
-        "albumId": s(album.id),
-        "albumName": s(album.name),
-        "songId": s(song.id),
-        "songName": s(song.name),
+        "artistId": column(artist.id),
+        "artistName": column(artist.name),
+        "albumId": column(album.id),
+        "albumName": column(album.name),
+        "songId": column(song.id),
+        "songName": column(song.name),
       }
     )
 
@@ -457,23 +456,21 @@ let selectArtistsWithAlbumsWithSongs = () => {
 
 let selectFavoritesOfUser1 = () => {
   open QueryBuilder.Select
-  open QueryBuilder.Expr
 
   let q =
     from(Favorites.table)
-    ->join1(Songs.table, Inner, ((favorite, song)) => equal(favorite.songId, Column(song.id)))
-    ->join2(Albums.table, Inner, ((_favorite, song, album)) =>
-      equal(song.albumId, Column(album.id))
-    )
-    ->join3(Artists.table, Inner, ((_favorite, _song, album, artist)) =>
-      equal(album.artistId, Column(artist.id))
-    )
+    ->join1(Songs.table, Inner, ((favorite, song)) => (favorite.songId, song.id))
+    ->join2(Albums.table, Inner, ((_favorite, song, album)) => (song.albumId, album.id))
+    ->join3(Artists.table, Inner, ((_favorite, _song, album, artist)) => (
+      album.artistId,
+      artist.id,
+    ))
     ->select(((favorite, song, album, artist)) =>
       {
-        "songName": s(song.name),
-        "albumName": s(album.name),
-        "artistName": s(artist.name),
-        "likedAt": s(favorite.likedAt),
+        "songName": column(song.name),
+        "albumName": column(album.name),
+        "artistName": column(artist.name),
+        "likedAt": column(favorite.likedAt),
       }
     )
 
@@ -508,7 +505,7 @@ let expressionsTest = () => {
   expressions->Js.Array2.forEach(expression => {
     from(Artists.table)
     ->where(expression)
-    ->select(c => {"id": s(c.id)})
+    ->select(c => {"id": column(c.id)})
     ->SQL.fromSelectQuery
     ->Js.log
 
@@ -522,7 +519,7 @@ let limitAndOffsetTest = () => {
   from(Artists.table)
   ->limit(10)
   ->offset(5)
-  ->select(c => {"id": s(c.id)})
+  ->select(c => {"id": column(c.id)})
   ->SQL.fromSelectQuery
   ->Js.log
   Js.log("")
@@ -534,7 +531,7 @@ let orderByTest = () => {
   from(Artists.table)
   ->addOrderBy(c => c.id, Asc)
   ->addOrderBy(c => c.name, Desc)
-  ->select(c => {"id": s(c.id)})
+  ->select(c => {"id": column(c.id)})
   ->SQL.fromSelectQuery
   ->Js.log
 
@@ -549,7 +546,7 @@ let groupByTest = () => {
   ->addGroupBy(c => c.id)
   ->addGroupBy(c => c.name)
   ->having(c => equal(c.id, Literal(1)))
-  ->select(c => {"id": s(c.id)})
+  ->select(c => {"id": column(c.id)})
   ->SQL.fromSelectQuery
   ->Js.log
 
@@ -563,7 +560,7 @@ let subQueryTest = () => {
 
   from(Artists.table)
   ->where(c => equal(c.id, from(Artists.table)->make(c => Agg.max(c.id))))
-  ->select(c => {"id": s(c.id)})
+  ->select(c => {"id": column(c.id)})
   ->SQL.fromSelectQuery
   ->Js.log
 

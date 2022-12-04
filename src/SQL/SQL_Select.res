@@ -46,7 +46,9 @@ let joinToSQL = (join: QueryBuilder.Select.join) => {
   let joinTypeString = joinTypeToSQL(join.joinType)
   let tableName = join.source.name
   let tableAlias = join.source.alias
-  let exprString = SQL_Expr.expressionToSQL(join.on)
+
+  let (leftColumn, rightColumn) = join.on
+  let exprString = `${leftColumn.table}.${leftColumn.name} = ${rightColumn.table}.${rightColumn.name}`
 
   `${joinTypeString} ${tableName} AS ${tableAlias} ON ${exprString}`
 }

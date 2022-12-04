@@ -9,7 +9,7 @@ type direction = Asc | Desc
 type join = {
   source: source,
   joinType: joinType,
-  on: QueryBuilder_Expr.t,
+  on: (Schema.Column.unknownColumn, Schema.Column.unknownColumn),
 }
 
 type order = {
@@ -56,7 +56,7 @@ type tx<'result> = {
     let join: join = {
       source: {name: table.name, alias},
       joinType,
-      on: Utils.ItemOrArray.apply(newColumns, getCondition),
+      on: Utils.ItemOrArray.apply(newColumns, getCondition->Obj.magic),
     }
 
     let newJoins = Js.Array2.concat(q.joins, [join])
@@ -93,7 +93,7 @@ let join1 = (
   q: t<'c1>,
   table: Schema.Table.t<'columns, _>,
   joinType,
-  getCondition: (('c1, 'columns)) => QueryBuilder_Expr.t,
+  getCondition: (('c1, 'columns)) => (Schema.Column.t<'t, _>, Schema.Column.t<'t, _>),
 ): t<('c1, 'columns)> => {
   join(q, table, joinType, getCondition, "t1")
 }
@@ -102,7 +102,7 @@ let join2 = (
   q: t<('c1, 'c2)>,
   table: Schema.Table.t<'columns, _>,
   joinType,
-  getCondition: (('c1, 'c2, 'columns)) => QueryBuilder_Expr.t,
+  getCondition: (('c1, 'c2, 'columns)) => (Schema.Column.t<'t, _>, Schema.Column.t<'t, _>),
 ): t<('c1, 'c2, 'columns)> => {
   join(q, table, joinType, getCondition, "t2")
 }
@@ -111,7 +111,7 @@ let join3 = (
   q: t<('c1, 'c2, 'c3)>,
   table: Schema.Table.t<'columns, _>,
   joinType,
-  getCondition: (('c1, 'c2, 'c3, 'columns)) => QueryBuilder_Expr.t,
+  getCondition: (('c1, 'c2, 'c3, 'columns)) => (Schema.Column.t<'t, _>, Schema.Column.t<'t, _>),
 ): t<('c1, 'c2, 'c3, 'columns)> => {
   join(q, table, joinType, getCondition, "t3")
 }
@@ -179,14 +179,14 @@ let select = (q: t<'columns>, getProjection: 'columns => 'result): tx<'result> =
   }
 }
 
-let s = (column: Schema.Column.t<'a, _>): 'a => Node.Column(column)->Obj.magic
+let column = (column: Schema.Column.t<'a, _>): 'a => Node.Column(column)->Obj.magic
 
 module Agg = {
-  let count = (node): int => aggregate(node, Some(Count))->s->Obj.magic
-  let sum = (node): float => aggregate(node, Some(Sum))->s->Obj.magic
-  let avg = (node): float => aggregate(node, Some(Avg))->s->Obj.magic
-  let min = node => aggregate(node, Some(Min))->s
-  let max = node => aggregate(node, Some(Max))->s
+  let count = (node): int => aggregate(node, Some(Count))->column->Obj.magic
+  let sum = (node): float => aggregate(node, Some(Sum))->column->Obj.magic
+  let avg = (node): float => aggregate(node, Some(Avg))->column->Obj.magic
+  let min = node => aggregate(node, Some(Min))->column
+  let max = node => aggregate(node, Some(Max))->column
 }
 
 let map = (q: tx<'projection>, row): 'projection => {
