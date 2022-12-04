@@ -1,5 +1,3 @@
-open Node
-
 %%raw(`
   import { inspect } from "util";
 `)
