@@ -1,6 +1,4 @@
-let simpleExpressionToSQL = (left, right, operator) => {
-  let column = left->Node.getColumnExn
-
+let simpleExpressionToSQL = (column, right, operator) => {
   let valueString = switch right {
   | Node.Literal(value) => SQL_Common.convertIfNeccessary(value, column)->Utils.stringify
   | Node.Column(column) => `${column.table}.${column.name}`
@@ -11,9 +9,7 @@ let simpleExpressionToSQL = (left, right, operator) => {
   `${column.table}.${column.name} ${operator} ${valueString}`
 }
 
-let betweenExpressionToSQL = (column, min, max, negate) => {
-  let column = column->Node.getColumnExn
-
+let betweenExpressionToSQL = (column, min: Node.unknownNode, max: Node.unknownNode, negate) => {
   let minString = switch min {
   | Node.Literal(value) => SQL_Common.convertIfNeccessary(value, column)->Utils.stringify
   | Node.Column(column) => `${column.table}.${column.name}`
@@ -33,9 +29,7 @@ let betweenExpressionToSQL = (column, min, max, negate) => {
   `${column.table}.${column.name} ${operatorString} ${minString} AND ${maxString}`
 }
 
-let inExpressionToSQL = (column, values, negate) => {
-  let column = column->Node.getColumnExn
-
+let inExpressionToSQL = (column, values: array<Node.unknownNode>, negate) => {
   let valuesString = values->Belt.Array.joinWith(", ", node => {
     switch node {
     | Node.Literal(value) => SQL_Common.convertIfNeccessary(value, column)->Utils.stringify

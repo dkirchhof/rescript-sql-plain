@@ -1,4 +1,8 @@
-type t<'res, 'db> = Skip | Query('res) | Column(Schema_Column.t<'res, 'db>) | Literal('res)
+type rec t<'res, 'db> =
+  | Skip
+  | Query('res)
+  | Column(Schema_Column.t<'res, 'db>)
+  | Literal('res)
 
 type unknownNode = t<unknown, unknown>
 

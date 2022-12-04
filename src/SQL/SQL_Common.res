@@ -4,7 +4,7 @@ let getNonSkippedColumns = (~record, ~columns) => {
   ->Js.Dict.entries
   ->Js.Array2.filter(((_, value)) => value !== Node.Skip)
   ->Js.Array2.map(((columnName, _)) =>
-    columns->Node.dictFromRecord->Js.Dict.unsafeGet(columnName)->Node.getColumnExn
+    columns->Schema.Column.dictFromRecord->Js.Dict.unsafeGet(columnName)
   )
 }
 

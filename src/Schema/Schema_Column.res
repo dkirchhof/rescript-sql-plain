@@ -15,6 +15,26 @@ type t<'res, 'db> = {
   aggregation: option<aggregationType>,
 }
 
+type unknownColumn = t<unknown, unknown>
+
+external toUnknownColumn: t<_> => unknownColumn = "%identity"
+external dictFromRecord: 'a => Js.Dict.t<unknownColumn> = "%identity"
+external recordFromDict: Js.Dict.t<unknownColumn> => 'a = "%identity"
+
+module Record = {
+  let mapEntries = (record: 'a, f): 'a => {
+    record->dictFromRecord->Js.Dict.entries->Js.Array2.map(f)->Js.Dict.fromArray->recordFromDict
+  }
+
+  let mapValues = (record: 'a, f): 'a => {
+    record->mapEntries(((columnName, column)) => {
+      let mapped = f(column)
+
+      (columnName, mapped)
+    })
+  }
+}
+
 type intColumn = t<int, int>
 type optionalIntColumn = t<option<int>, Js.Null.t<int>>
 

@@ -23,7 +23,7 @@ let projectionToSQL = projection => {
       ->Js.Dict.entries
       ->Js.Array2.map(((alias, node)) => {
         switch node {
-        | Column(column) =>
+        | Node.Column(column) =>
           withAggregation(`${column.table}.${column.name}`, column.aggregation) ++ ` AS ${alias}`
         | _ => Js.Exn.raiseError("not implemented yet")
         }
@@ -63,9 +63,7 @@ let havingToSQL = having => {
   having->Belt.Option.map(expr => `HAVING ${SQL_Expr.expressionToSQL(expr)}`)
 }
 
-let groupToSQL = (group: Node.unknownNode) => {
-  let column = group->Node.getColumnExn
-
+let groupToSQL = (column: Schema.Column.unknownColumn) => {
   `${column.table}.${column.name}`
 }
 
@@ -80,10 +78,9 @@ let directionToSQL = (direction: QueryBuilder.Select.direction) =>
   }
 
 let orderToSQL = (order: QueryBuilder.Select.order) => {
-  let column = order.column->Node.getColumnExn
   let direction = order.direction->directionToSQL
 
-  `${column.table}.${column.name} ${direction}`
+  `${order.column.table}.${order.column.name} ${direction}`
 }
 
 let orderByToSQL = orderBy => {

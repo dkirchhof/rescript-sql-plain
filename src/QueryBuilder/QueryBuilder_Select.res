@@ -13,18 +13,18 @@ type join = {
 }
 
 type order = {
-  column: Node.unknownNode,
+  column: Schema.Column.unknownColumn,
   direction: direction,
 }
 
 type t<'columns> = {
   from: source,
   joins: array<join>,
-  columns: Utils.ItemOrArray.t<Js.Dict.t<Node.unknownNode>>,
+  columns: Utils.ItemOrArray.t<Schema.Column.unknownColumn>,
   selection: option<QueryBuilder_Expr.t>,
   having: option<QueryBuilder_Expr.t>,
   orderBy: option<array<order>>,
-  groupBy: option<array<Node.unknownNode>>,
+  groupBy: option<array<Schema.Column.unknownColumn>>,
   limit: option<int>,
   offset: option<int>,
 }
@@ -35,30 +35,22 @@ type tx<'result> = {
   selection: option<QueryBuilder_Expr.t>,
   having: option<QueryBuilder_Expr.t>,
   orderBy: option<array<order>>,
-  groupBy: option<array<Node.unknownNode>>,
+  groupBy: option<array<Schema.Column.unknownColumn>>,
   limit: option<int>,
   offset: option<int>,
   projection: 'result,
 }
 
 %%private(
-  let mapColumns = (columns, f) =>
-    columns
-    ->Node.dictFromRecord
-    ->Js.Dict.entries
-    ->Js.Array2.map(((columnName, node)) => {
-      let column = Node.getColumnExn(node)
-      let mapped = column->f->Node.Column
-
-      (columnName, mapped)
-    })
-    ->Js.Dict.fromArray
-    ->Node.recordFromDict
-
   let join = (q, table: Schema.Table.t<_>, joinType, getCondition, alias) => {
     let newColumns = Utils.ItemOrArray.concat(
       q.columns,
-      [mapColumns(table.columns, column => {...column, table: alias})],
+      [
+        Schema.Column.Record.mapValues(table.columns, column => {
+          ...column,
+          table: alias,
+        })->Obj.magic,
+      ],
     )
 
     let join: join = {
@@ -76,17 +68,19 @@ type tx<'result> = {
     }
   }
 
-  let aggregate = (node, aggregation) => {
-    let columnNode = node->Node.getColumnExn
+  let aggregate = (column, aggregation) => {
+    open Schema.Column
 
-    {...columnNode, aggregation}->Node.Column
+    {...column, aggregation}
   }
 )
 
 let from = (table: Schema.Table.t<'columns, _>): t<'columns> => {
   from: {name: table.name, alias: "t0"},
   joins: [],
-  columns: mapColumns(table.columns, column => {...column, table: "t0"})->Item,
+  columns: Schema.Column.Record.mapValues(table.columns, column => {...column, table: "t0"})
+  ->Obj.magic
+  ->Item,
   selection: None,
   having: None,
   orderBy: None,
@@ -134,9 +128,11 @@ let having = (q: t<'columns>, getHaving: 'columns => QueryBuilder_Expr.t): t<'co
   {...q, having: Some(having)}
 }
 
-let addOrderBy = (q: t<'columns>, getColumn: 'columns => Node.t<_>, direction): t<'columns> => {
+let addOrderBy = (q: t<'columns>, getColumn: 'columns => Schema.Column.t<_>, direction): t<
+  'columns,
+> => {
   let columnAndDirection = {
-    column: Utils.ItemOrArray.apply(q.columns, getColumn)->Node.toUnknown,
+    column: Utils.ItemOrArray.apply(q.columns, getColumn)->Schema.Column.toUnknownColumn,
     direction,
   }
 
@@ -148,8 +144,8 @@ let addOrderBy = (q: t<'columns>, getColumn: 'columns => Node.t<_>, direction): 
   {...q, orderBy: Some(orderBy)}
 }
 
-let addGroupBy = (q: t<'columns>, getColumn: 'columns => Node.t<_>): t<'columns> => {
-  let column = Utils.ItemOrArray.apply(q.columns, getColumn)->Node.toUnknown
+let addGroupBy = (q: t<'columns>, getColumn: 'columns => Schema.Column.t<_>): t<'columns> => {
+  let column = Utils.ItemOrArray.apply(q.columns, getColumn)->Schema.Column.toUnknownColumn
 
   let groupBy = switch q.groupBy {
   | Some(old) => Js.Array2.concat(old, [column])
@@ -183,12 +179,12 @@ let select = (q: t<'columns>, getProjection: 'columns => 'result): tx<'result> =
   }
 }
 
-external s: Node.t<'a, _> => 'a = "%identity"
+let s = (column: Schema.Column.t<'a, _>): 'a => Node.Column(column)->Obj.magic
 
 module Agg = {
-  let count = (node): int => aggregate(node, Some(Count))->Obj.magic
-  let sum = (node): float => aggregate(node, Some(Sum))->Obj.magic
-  let avg = (node): float => aggregate(node, Some(Avg))->Obj.magic
+  let count = (node): int => aggregate(node, Some(Count))->s->Obj.magic
+  let sum = (node): float => aggregate(node, Some(Sum))->s->Obj.magic
+  let avg = (node): float => aggregate(node, Some(Avg))->s->Obj.magic
   let min = node => aggregate(node, Some(Min))->s
   let max = node => aggregate(node, Some(Max))->s
 }
@@ -198,7 +194,7 @@ let map = (q: tx<'projection>, row): 'projection => {
     let node = q.projection->Node.dictFromRecord->Js.Dict.unsafeGet(columnName)
 
     let convertedValue = switch node {
-    | Column({converter: Some(converter)}) => value->converter.dbToRes
+    | Node.Column({converter: Some(converter)}) => value->converter.dbToRes
     | _ => value
     }
 

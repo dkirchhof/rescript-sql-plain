@@ -5,11 +5,9 @@ type t<'columns, 'constraints> = {
 }
 
 let make = (name, columns: 'columns, makeConstraints: 'columns => 'constraints) => {
-  let columns = columns->Node.Record.mapEntries(((columnName, node)) => {
-    let column = switch node {
-    | Node.Column(column) => Node.Column({...column, table: name, name: columnName})
-    | _ => Js.Exn.raiseError("This value should be a Column.")
-    }
+  let columns = columns->Schema_Column.Record.mapEntries(((columnName, column)) => {
+    let column = {...column, table: name, name: columnName}
+
     (columnName, column)
   })
 

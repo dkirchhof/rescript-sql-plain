@@ -12,27 +12,17 @@ let fkStrategyToSQL = s =>
 let constraintToSQL = (name, cnstraint) =>
   switch cnstraint {
   | Schema.Constraint.PrimaryKey(nodes) => {
-      let columnsString = nodes->Belt.Array.joinWith(", ", node =>
-        switch node {
-        | Node.Column(column) => column.name
-        | _ => Js.Exn.raiseError("This value should be a columns.")
-        }
-      )
+      let columnsString = nodes->Belt.Array.joinWith(", ", column => column.name)
 
       `CONSTRAINT ${name} PRIMARY KEY(${columnsString})`
     }
 
-  | ForeignKey(ownColumn, foreignColumn, onUpdate, onDelete) =>
-    switch (ownColumn, foreignColumn) {
-    | (Node.Column(ownColumn), Node.Column(foreignColumn)) => {
-        let references = `REFERENCES ${foreignColumn.table}(${foreignColumn.name})`
-        let onUpdate = `ON UPDATE ${fkStrategyToSQL(onUpdate)}`
-        let onDelete = `ON DELETE ${fkStrategyToSQL(onDelete)}`
+  | ForeignKey(ownColumn, foreignColumn, onUpdate, onDelete) => {
+      let references = `REFERENCES ${foreignColumn.table}(${foreignColumn.name})`
+      let onUpdate = `ON UPDATE ${fkStrategyToSQL(onUpdate)}`
+      let onDelete = `ON DELETE ${fkStrategyToSQL(onDelete)}`
 
-        `CONSTRAINT ${name} FOREIGN KEY(${ownColumn.name}) ${references} ${onUpdate} ${onDelete}`
-      }
-
-    | _ => Js.Exn.raiseError("ownColumn and foreignColumn should be columns.")
+      `CONSTRAINT ${name} FOREIGN KEY(${ownColumn.name}) ${references} ${onUpdate} ${onDelete}`
     }
   }
 
@@ -42,22 +32,18 @@ let fromCreateTableQuery = (q: QueryBuilder.CreateTable.t<_>) => {
     ->addM(
       2,
       q.table.columns
-      ->Node.dictFromRecord
+      ->Schema.Column.dictFromRecord
       ->Js.Dict.entries
-      ->Js.Array2.map(((name: string, node)) =>
-        switch node {
-        | Node.Column(column) =>
-          let sizeString = switch column.size {
-          | Some(size) => `(${size->Belt.Int.toString})`
-          | None => ""
-          }
-
-          let notNullString = column.nullable ? "" : " NOT NULL"
-
-          `${name} ${(column.dbType :> string)}${sizeString}${notNullString}`
-        | _ => Js.Exn.raiseError("This node should be a column.")
+      ->Js.Array2.map(((name, column)) => {
+        let sizeString = switch column.size {
+        | Some(size) => `(${size->Belt.Int.toString})`
+        | None => ""
         }
-      ),
+
+        let notNullString = column.nullable ? "" : " NOT NULL"
+
+        `${name} ${(column.dbType :> string)}${sizeString}${notNullString}`
+      }),
     )
     ->addM(
       2,

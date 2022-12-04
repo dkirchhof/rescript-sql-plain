@@ -18,8 +18,8 @@ let connection = SQLite3.createConnection(":memory:")
 
 module Artists = {
   type columns = {
-    id: intNode,
-    name: stringNode,
+    id: Schema.Column.intColumn,
+    name: Schema.Column.stringColumn,
   }
 
   type constraints = {pk: Schema.Constraint.t}
@@ -27,8 +27,8 @@ module Artists = {
   let table = Schema.Table.make(
     "artists",
     {
-      id: Column(Schema.Column.integer({size: 10})),
-      name: Column(Schema.Column.varchar({size: 255})),
+      id: Schema.Column.integer({size: 10}),
+      name: Schema.Column.varchar({size: 255}),
     },
     columns => {
       pk: Schema.Constraint.primaryKey(columns.id),
@@ -38,10 +38,10 @@ module Artists = {
 
 module Albums = {
   type columns = {
-    id: intNode,
-    artistId: intNode,
-    name: stringNode,
-    year: intNode,
+    id: Schema.Column.intColumn,
+    artistId: Schema.Column.intColumn,
+    name: Schema.Column.stringColumn,
+    year: Schema.Column.intColumn,
   }
 
   type constraints = {pk: Schema.Constraint.t, fkArtist: Schema.Constraint.t}
@@ -49,10 +49,10 @@ module Albums = {
   let table = Schema.Table.make(
     "albums",
     {
-      id: Column(Schema.Column.integer({size: 10})),
-      artistId: Column(Schema.Column.integer({size: 10})),
-      name: Column(Schema.Column.varchar({size: 255})),
-      year: Column(Schema.Column.integer({size: 10})),
+      id: Schema.Column.integer({size: 10}),
+      artistId: Schema.Column.integer({size: 10}),
+      name: Schema.Column.varchar({size: 255}),
+      year: Schema.Column.integer({size: 10}),
     },
     columns => {
       pk: Schema.Constraint.primaryKey(columns.id),
@@ -68,10 +68,10 @@ module Albums = {
 
 module Songs = {
   type columns = {
-    id: intNode,
-    albumId: intNode,
-    name: stringNode,
-    duration: stringNode,
+    id: Schema.Column.intColumn,
+    albumId: Schema.Column.intColumn,
+    name: Schema.Column.stringColumn,
+    duration: Schema.Column.stringColumn,
   }
 
   type constraints = {pk: Schema.Constraint.t, fkAlbum: Schema.Constraint.t}
@@ -79,10 +79,10 @@ module Songs = {
   let table = Schema.Table.make(
     "songs",
     {
-      id: Column(Schema.Column.integer({size: 10})),
-      albumId: Column(Schema.Column.integer({size: 10})),
-      name: Column(Schema.Column.varchar({size: 255})),
-      duration: Column(Schema.Column.varchar({size: 255})),
+      id: Schema.Column.integer({size: 10}),
+      albumId: Schema.Column.integer({size: 10}),
+      name: Schema.Column.varchar({size: 255}),
+      duration: Schema.Column.varchar({size: 255}),
     },
     columns => {
       pk: Schema.Constraint.primaryKey(columns.id),
@@ -98,8 +98,8 @@ module Songs = {
 
 module Users = {
   type columns = {
-    id: intNode,
-    name: stringNode,
+    id: Schema.Column.intColumn,
+    name: Schema.Column.stringColumn,
   }
 
   type constraints = {pk: Schema.Constraint.t}
@@ -107,8 +107,8 @@ module Users = {
   let table = Schema.Table.make(
     "users",
     {
-      id: Column(Schema.Column.integer({size: 10})),
-      name: Column(Schema.Column.varchar({size: 10})),
+      id: Schema.Column.integer({size: 10}),
+      name: Schema.Column.varchar({size: 10}),
     },
     columns => {
       pk: Schema.Constraint.primaryKey(columns.id),
@@ -118,9 +118,9 @@ module Users = {
 
 module Favorites = {
   type columns = {
-    songId: intNode,
-    userId: intNode,
-    likedAt: dateNode,
+    songId: Schema.Column.intColumn,
+    userId: Schema.Column.intColumn,
+    likedAt: Schema.Column.dateColumn,
   }
 
   type constraints = {
@@ -132,9 +132,9 @@ module Favorites = {
   let table = Schema.Table.make(
     "favorites",
     {
-      songId: Column(Schema.Column.integer({})),
-      userId: Column(Schema.Column.integer({})),
-      likedAt: Column(Schema.Column.date({})),
+      songId: Schema.Column.integer({}),
+      userId: Schema.Column.integer({}),
+      likedAt: Schema.Column.date({}),
     },
     columns => {
       pk: Schema.Constraint.primaryKey((columns.songId, columns.userId)),
@@ -190,18 +190,18 @@ let insertData = () => {
   let q1 =
     insertInto(Artists.table)
     ->values([
-      {id: Literal(1), name: Literal("Architects")},
-      {id: Literal(2), name: Literal("While She Sleeps")},
-      {id: Literal(3), name: Literal("Misfits")},
-      {id: Literal(4), name: Literal("Iron Maiden")},
-      {id: Literal(5), name: Literal("UPDATEME")},
+      {id: literal(1), name: literal("Architects")},
+      {id: literal(2), name: literal("While She Sleeps")},
+      {id: literal(3), name: literal("Misfits")},
+      {id: literal(4), name: literal("Iron Maiden")},
+      {id: literal(5), name: literal("UPDATEME")},
     ])
     ->SQL.fromInsertQuery
 
   let q2 =
     insertInto(Albums.table)
     ->values([
-      {id: Literal(1), artistId: Literal(1), name: Literal("Hollow Crown"), year: Literal(2009)},
+      {id: literal(1), artistId: literal(1), name: literal("Hollow Crown"), year: literal(2009)},
       /* {id: 2, artistId: 1, name: "Lost Forever / Lost Together", year: 2014}, */
       /* {id: 3, artistId: 2, name: "This Is the Six", year: 2012}, */
       /* {id: 4, artistId: 2, name: "Brainwashed", year: 2015}, */
@@ -220,10 +220,10 @@ let insertData = () => {
     insertInto(Songs.table)
     ->values([
       {
-        id: Literal(1),
-        albumId: Literal(1),
-        name: Literal("Early Grave"),
-        duration: Literal("3:32"),
+        id: literal(1),
+        albumId: literal(1),
+        name: literal("Early Grave"),
+        duration: literal("3:32"),
       },
       /* {id: 2, albumId: 1, name: "Dethroned", duration: "3:06"}, */
       /* {id: 3, albumId: 1, name: "Numbers Count for Nothing", duration: "3:50"}, */
@@ -345,13 +345,13 @@ let insertData = () => {
 
   let q4 =
     insertInto(Users.table)
-    ->values([{id: Literal(1), name: Literal("John Doe")}])
+    ->values([{id: literal(1), name: literal("John Doe")}])
     ->SQL.fromInsertQuery
 
   let q5 =
     insertInto(Favorites.table)
     ->values([
-      {userId: Literal(1), songId: Literal(1), likedAt: Literal(Js.Date.fromString("2022-01-01"))},
+      {userId: literal(1), songId: literal(1), likedAt: literal(Js.Date.fromString("2022-01-01"))},
       /* {userId: 1, songId: 2, likedAt: Js.Date.fromString("2022-02-01")}, */
     ])
     ->SQL.fromInsertQuery
@@ -385,8 +385,8 @@ let updateData = () => {
   let q1 =
     update(Artists.table)
     ->set({
-      id: Skip,
-      name: Literal("DELETEME"),
+      id: skip,
+      name: literal("DELETEME"),
     })
     ->where(c => equal(c.name, Literal("UPDATEME")))
     ->SQL.fromUpdateQuery
@@ -435,8 +435,8 @@ let selectArtistsWithAlbumsWithSongs = () => {
 
   let q =
     from(Artists.table)
-    ->join1(Albums.table, Left, ((artist, album)) => equal(album.artistId, artist.id))
-    ->join2(Songs.table, Left, ((_artist, album, song)) => equal(song.albumId, album.id))
+    ->join1(Albums.table, Left, ((artist, album)) => equal(album.artistId, Column(artist.id)))
+    ->join2(Songs.table, Left, ((_artist, album, song)) => equal(song.albumId, Column(album.id)))
     ->select(((artist, album, song)) =>
       {
         "artistId": s(artist.id),
@@ -463,10 +463,12 @@ let selectFavoritesOfUser1 = () => {
 
   let q =
     from(Favorites.table)
-    ->join1(Songs.table, Inner, ((favorite, song)) => equal(favorite.songId, song.id))
-    ->join2(Albums.table, Inner, ((_favorite, song, album)) => equal(song.albumId, album.id))
+    ->join1(Songs.table, Inner, ((favorite, song)) => equal(favorite.songId, Column(song.id)))
+    ->join2(Albums.table, Inner, ((_favorite, song, album)) =>
+      equal(song.albumId, Column(album.id))
+    )
     ->join3(Artists.table, Inner, ((_favorite, _song, album, artist)) =>
-      equal(album.artistId, artist.id)
+      equal(album.artistId, Column(artist.id))
     )
     ->select(((favorite, song, album, artist)) =>
       {
@@ -506,7 +508,11 @@ let expressionsTest = () => {
   ]
 
   expressions->Js.Array2.forEach(expression => {
-    from(Artists.table)->where(expression)->select(c => c)->SQL.fromSelectQuery->Js.log
+    from(Artists.table)
+    ->where(expression)
+    ->select(c => {"id": s(c.id)})
+    ->SQL.fromSelectQuery
+    ->Js.log
 
     Js.log("")
   })
@@ -515,7 +521,12 @@ let expressionsTest = () => {
 let limitAndOffsetTest = () => {
   open QueryBuilder.Select
 
-  from(Artists.table)->limit(10)->offset(5)->select(c => c)->SQL.fromSelectQuery->Js.log
+  from(Artists.table)
+  ->limit(10)
+  ->offset(5)
+  ->select(c => {"id": s(c.id)})
+  ->SQL.fromSelectQuery
+  ->Js.log
   Js.log("")
 }
 
@@ -525,7 +536,7 @@ let orderByTest = () => {
   from(Artists.table)
   ->addOrderBy(c => c.id, Asc)
   ->addOrderBy(c => c.name, Desc)
-  ->select(c => c)
+  ->select(c => {"id": s(c.id)})
   ->SQL.fromSelectQuery
   ->Js.log
 
@@ -540,7 +551,7 @@ let groupByTest = () => {
   ->addGroupBy(c => c.id)
   ->addGroupBy(c => c.name)
   ->having(c => equal(c.id, Literal(1)))
-  ->select(c => c)
+  ->select(c => {"id": s(c.id)})
   ->SQL.fromSelectQuery
   ->Js.log
 
@@ -553,10 +564,8 @@ let subQueryTest = () => {
   open SubQueryBuilder
 
   from(Artists.table)
-  ->where(c =>
-    equal(c.id, from(Artists.table)->where(c => equal(c.id, Literal(1)))->make(c => c.id))
-  )
-  ->select(c => c)
+  ->where(c => equal(c.id, from(Artists.table)->make(c => Agg.max(c.id))))
+  ->select(c => {"id": s(c.id)})
   ->SQL.fromSelectQuery
   ->Js.log
 
@@ -566,8 +575,7 @@ let subQueryTest = () => {
 let aggregationTest = () => {
   open QueryBuilder.Select
 
-  let q = from(Artists.table)
-  ->select(c =>
+  let q = from(Artists.table)->select(c =>
     {
       "count": Agg.count(c.name),
       "sum": Agg.sum(c.name),

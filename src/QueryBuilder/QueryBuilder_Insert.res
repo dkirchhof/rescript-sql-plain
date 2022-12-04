@@ -16,3 +16,5 @@ let values = (q: t<_>, values) => {
   tableColumns: q.tableColumns,
   values,
 }
+
+let literal = (value: 'a): Schema.Column.t<'a, _> => Node.Literal(value)->Obj.magic
