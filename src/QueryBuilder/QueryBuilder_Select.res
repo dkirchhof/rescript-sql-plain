@@ -20,7 +20,7 @@ type order = {
 type t<'columns> = {
   from: source,
   joins: array<join>,
-  columns: Utils.ItemOrArray.t<Js.Dict.t<Any.t>>,
+  columns: Utils.ItemOrArray.t<Js.Dict.t<Node.unknownNode>>,
   selection: option<QueryBuilder_Expr.t>,
   having: option<QueryBuilder_Expr.t>,
   orderBy: option<array<order>>,
