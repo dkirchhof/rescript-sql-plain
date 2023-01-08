@@ -8,7 +8,7 @@ type aggregationType = Count | Sum | Avg | Min | Max
 type t<'res, 'db> = {
   table: string,
   name: string,
-  dbType: [#VARCHAR | #INTEGER | #TEXT],
+  dbType: [#VARCHAR | #INTEGER | #REAL | #TEXT],
   nullable: bool,
   size: option<int>,
   converter: option<converter<'res, 'db>>,
@@ -37,6 +37,9 @@ module Record = {
 
 type intColumn = t<int, int>
 type optionalIntColumn = t<option<int>, Js.Null.t<int>>
+
+type floatColumn = t<float, float>
+type optionalFloatColumn = t<option<float>, Js.Null.t<float>>
 
 type stringColumn = t<string, string>
 type optionalStringColumn = t<option<string>, Js.Null.t<string>>
@@ -76,6 +79,16 @@ let _integer = (nullable, converter, options) => {
   aggregation: None,
 }
 
+let _float = (nullable, converter, options) => {
+  table: "",
+  name: "",
+  dbType: #REAL,
+  nullable,
+  size: options.size,
+  converter,
+  aggregation: None,
+}
+
 let _date = (nullable, converter, options) => {
   table: "",
   name: "",
@@ -99,6 +112,9 @@ let optionalText: options => optionalStringColumn = _text(true, Some(nullConvert
 
 let integer: options => intColumn = _integer(false, None)
 let optionalInteger: options => optionalIntColumn = _integer(true, Some(nullConverter))
+
+let float: options => floatColumn = _float(false, None)
+let optionalFloat: options => optionalFloatColumn = _float(true, Some(nullConverter))
 
 let date: options => dateColumn = _date(
   false,
