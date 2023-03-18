@@ -1,7 +1,7 @@
-type t<'columns> = {
+type t<'columns, 'a> = {
   tableName: string,
   tableColumns: 'columns,
-  selection: option<QueryBuilder_Expr.t>,
+  selection: option<QueryBuilder_Expr.t<'a>>,
 }
 
 let deleteFrom = (table: Schema.Table.t<_>) => {

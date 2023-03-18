@@ -18,6 +18,9 @@ let constraintToSQL = (name, cnstraint) =>
     }
 
   | ForeignKey(ownColumn, foreignColumn, onUpdate, onDelete) => {
+      let ownColumn = Schema.Column.fromAny(ownColumn)
+      let foreignColumn = Schema.Column.fromAny(foreignColumn)
+
       let references = `REFERENCES ${foreignColumn.table}(${foreignColumn.name})`
       let onUpdate = `ON UPDATE ${fkStrategyToSQL(onUpdate)}`
       let onDelete = `ON DELETE ${fkStrategyToSQL(onDelete)}`
@@ -50,7 +53,7 @@ let fromCreateTableQuery = (q: QueryBuilder.CreateTable.t<_>) => {
       q.table.constraints
       ->Obj.magic
       ->Js.Dict.entries
-      ->Js.Array2.map(((name, cnstraint: Schema.Constraint.t)) => constraintToSQL(name, cnstraint)),
+      ->Js.Array2.map(((name, cnstraint: Schema.Constraint.t<_>)) => constraintToSQL(name, cnstraint)),
     )
     ->build(",\n")
 

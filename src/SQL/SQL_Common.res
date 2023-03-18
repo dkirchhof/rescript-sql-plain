@@ -15,15 +15,18 @@ let convertIfNeccessary = (value, targetColumn: Schema_Column.t<_>) => {
   }
 }
 
-let convertRecordToStringDict = (~record, ~columns: array<Schema_Column.t<_>>) => {
+let convertRecordToStringDict = (~record, ~columns: array<_>) => {
   columns
   ->Js.Array2.map(column => {
+    let column = Schema.Column.fromAny(column)
     let value = record->Node.dictFromRecord->Js.Dict.unsafeGet(column.name)
 
-    let valueString = switch value {
-    | Node.Literal(value) => convertIfNeccessary(value, column)->Utils.stringify
-    | _ => Js.Exn.raiseError("not implemented yet")
-    }
+    /* let valueString = switch value { */
+    /* | Node.Literal(value) => convertIfNeccessary(value, column)->Utils.stringify */
+    /* | _ => Js.Exn.raiseError("not implemented yet") */
+    /* } */
+    
+    let valueString = convertIfNeccessary(value, column)->Utils.stringify
 
     (column.name, valueString)
   })

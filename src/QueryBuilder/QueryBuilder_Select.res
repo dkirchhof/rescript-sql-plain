@@ -17,23 +17,23 @@ type order = {
   direction: direction,
 }
 
-type t<'columns> = {
+type t<'columns, 'a> = {
   from: source,
   joins: array<join>,
   columns: Utils.ItemOrArray.t<Schema.Column.unknownColumn>,
-  selection: option<QueryBuilder_Expr.t>,
-  having: option<QueryBuilder_Expr.t>,
+  selection: option<QueryBuilder_Expr.t<'a>>,
+  having: option<QueryBuilder_Expr.t<'a>>,
   orderBy: option<array<order>>,
   groupBy: option<array<Schema.Column.unknownColumn>>,
   limit: option<int>,
   offset: option<int>,
 }
 
-type tx<'result> = {
+type tx<'result, 'a> = {
   from: source,
   joins: array<join>,
-  selection: option<QueryBuilder_Expr.t>,
-  having: option<QueryBuilder_Expr.t>,
+  selection: option<QueryBuilder_Expr.t<'a>>,
+  having: option<QueryBuilder_Expr.t<'a>>,
   orderBy: option<array<order>>,
   groupBy: option<array<Schema.Column.unknownColumn>>,
   limit: option<int>,
@@ -75,7 +75,7 @@ type tx<'result> = {
   }
 )
 
-let from = (table: Schema.Table.t<'columns, _>): t<'columns> => {
+let from = (table: Schema.Table.t<'columns, _>): t<'columns, _> => {
   from: {name: table.name, alias: "t0"},
   joins: [],
   columns: Schema.Column.Record.mapValues(table.columns, column => {...column, table: "t0"})
@@ -90,46 +90,45 @@ let from = (table: Schema.Table.t<'columns, _>): t<'columns> => {
 }
 
 let join1 = (
-  q: t<'c1>,
+  q: t<'c1, _>,
   table: Schema.Table.t<'columns, _>,
   joinType,
   getCondition: (('c1, 'columns)) => (Schema.Column.t<'t, _>, Schema.Column.t<'t, _>),
-): t<('c1, 'columns)> => {
+): t<('c1, 'columns), _> => {
   join(q, table, joinType, getCondition, "t1")
 }
 
 let join2 = (
-  q: t<('c1, 'c2)>,
+  q: t<('c1, 'c2), _>,
   table: Schema.Table.t<'columns, _>,
   joinType,
   getCondition: (('c1, 'c2, 'columns)) => (Schema.Column.t<'t, _>, Schema.Column.t<'t, _>),
-): t<('c1, 'c2, 'columns)> => {
+): t<('c1, 'c2, 'columns), _> => {
   join(q, table, joinType, getCondition, "t2")
 }
 
 let join3 = (
-  q: t<('c1, 'c2, 'c3)>,
+  q: t<('c1, 'c2, 'c3), _>,
   table: Schema.Table.t<'columns, _>,
   joinType,
   getCondition: (('c1, 'c2, 'c3, 'columns)) => (Schema.Column.t<'t, _>, Schema.Column.t<'t, _>),
-): t<('c1, 'c2, 'c3, 'columns)> => {
+): t<('c1, 'c2, 'c3, 'columns), _> => {
   join(q, table, joinType, getCondition, "t3")
 }
 
-let where = (q: t<'columns>, getSelection: 'columns => QueryBuilder_Expr.t): t<'columns> => {
+let where = (q: t<'columns, _>, getSelection: 'columns => QueryBuilder_Expr.t<_>): t<'columns, _> => {
   let selection = Utils.ItemOrArray.apply(q.columns, getSelection)
 
   {...q, selection: Some(selection)}
 }
 
-let having = (q: t<'columns>, getHaving: 'columns => QueryBuilder_Expr.t): t<'columns> => {
+let having = (q: t<'columns, _>, getHaving: 'columns => QueryBuilder_Expr.t<_>): t<'columns, _> => {
   let having = Utils.ItemOrArray.apply(q.columns, getHaving)
 
   {...q, having: Some(having)}
 }
 
-let addOrderBy = (q: t<'columns>, getColumn: 'columns => Schema.Column.t<_>, direction): t<
-  'columns,
+let addOrderBy = (q: t<'columns, _>, getColumn: 'columns => Schema.Column.t<_>, direction): t<'columns, _,
 > => {
   let columnAndDirection = {
     column: Utils.ItemOrArray.apply(q.columns, getColumn)->Schema.Column.toUnknownColumn,
@@ -144,7 +143,7 @@ let addOrderBy = (q: t<'columns>, getColumn: 'columns => Schema.Column.t<_>, dir
   {...q, orderBy: Some(orderBy)}
 }
 
-let addGroupBy = (q: t<'columns>, getColumn: 'columns => Schema.Column.t<_>): t<'columns> => {
+let addGroupBy = (q: t<'columns, _>, getColumn: 'columns => Schema.Column.t<_>): t<'columns, _> => {
   let column = Utils.ItemOrArray.apply(q.columns, getColumn)->Schema.Column.toUnknownColumn
 
   let groupBy = switch q.groupBy {
@@ -155,15 +154,15 @@ let addGroupBy = (q: t<'columns>, getColumn: 'columns => Schema.Column.t<_>): t<
   {...q, groupBy: Some(groupBy)}
 }
 
-let limit = (q: t<'columns>, limit): t<'columns> => {
+let limit = (q: t<'columns, _>, limit): t<'columns, _> => {
   {...q, limit: Some(limit)}
 }
 
-let offset = (q: t<'columns>, offset): t<'columns> => {
+let offset = (q: t<'columns, _>, offset): t<'columns, _> => {
   {...q, offset: Some(offset)}
 }
 
-let select = (q: t<'columns>, getProjection: 'columns => 'result): tx<'result> => {
+let select = (q: t<'columns, _>, getProjection: 'columns => 'result): tx<'result, _> => {
   let projection = Utils.ItemOrArray.apply(q.columns, getProjection)
 
   {
@@ -189,7 +188,7 @@ module Agg = {
   let max = node => aggregate(node, Some(Max))->column
 }
 
-let map = (q: tx<'projection>, row): 'projection => {
+let map = (q: tx<'projection, _>, row): 'projection => {
   row->Utils.mapEntries(((columnName, value)) => {
     let node = q.projection->Node.dictFromRecord->Js.Dict.unsafeGet(columnName)
 

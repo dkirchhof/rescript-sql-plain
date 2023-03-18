@@ -20,6 +20,7 @@ type unknownColumn = t<unknown, unknown>
 external toUnknownColumn: t<_> => unknownColumn = "%identity"
 external dictFromRecord: 'a => Js.Dict.t<unknownColumn> = "%identity"
 external recordFromDict: Js.Dict.t<unknownColumn> => 'a = "%identity"
+external fromAny: 'a => t<_, _> = "%identity"
 
 module Record = {
   let mapEntries = (record: 'a, f): 'a => {
@@ -35,21 +36,9 @@ module Record = {
   }
 }
 
-type intColumn = t<int, int>
-type optionalIntColumn = t<option<int>, Js.Null.t<int>>
-
-type floatColumn = t<float, float>
-type optionalFloatColumn = t<option<float>, Js.Null.t<float>>
-
-type stringColumn = t<string, string>
-type optionalStringColumn = t<option<string>, Js.Null.t<string>>
-
-type dateColumn = t<Js.Date.t, string>
-type optionalDateColumn = t<option<Js.Date.t>, Js.Null.t<string>>
-
 type options = {size?: int}
 
-let _varchar = (nullable, converter, options) => {
+let _varchar = (nullable, converter, options) => Obj.magic({
   table: "",
   name: "",
   dbType: #VARCHAR,
@@ -57,9 +46,9 @@ let _varchar = (nullable, converter, options) => {
   size: options.size,
   converter,
   aggregation: None,
-}
+})
 
-let _text = (nullable, converter, options) => {
+let _text = (nullable, converter, options) => Obj.magic({
   table: "",
   name: "",
   dbType: #TEXT,
@@ -67,9 +56,9 @@ let _text = (nullable, converter, options) => {
   size: options.size,
   converter,
   aggregation: None,
-}
+})
 
-let _integer = (nullable, converter, options) => {
+let _integer = (nullable, converter, options) => Obj.magic({
   table: "",
   name: "",
   dbType: #INTEGER,
@@ -77,9 +66,9 @@ let _integer = (nullable, converter, options) => {
   size: options.size,
   converter,
   aggregation: None,
-}
+})
 
-let _float = (nullable, converter, options) => {
+let _float = (nullable, converter, options) => Obj.magic({
   table: "",
   name: "",
   dbType: #REAL,
@@ -87,9 +76,9 @@ let _float = (nullable, converter, options) => {
   size: options.size,
   converter,
   aggregation: None,
-}
+})
 
-let _date = (nullable, converter, options) => {
+let _date = (nullable, converter, options) => Obj.magic({
   table: "",
   name: "",
   dbType: #INTEGER,
@@ -97,26 +86,26 @@ let _date = (nullable, converter, options) => {
   size: options.size,
   converter,
   aggregation: None,
-}
+})
 
 let nullConverter = {
   dbToRes: Js.Null.toOption,
   resToDB: Js.Null.fromOption,
 }
 
-let varchar: options => stringColumn = _varchar(false, None)
-let optionalVarchar: options => optionalStringColumn = _varchar(true, Some(nullConverter))
+let varchar: options => string = _varchar(false, None)
+let optionalVarchar: options => option<string> = _varchar(true, Some(nullConverter))
 
-let text: options => stringColumn = _text(false, None)
-let optionalText: options => optionalStringColumn = _text(true, Some(nullConverter))
+let text: options => string = _text(false, None)
+let optionalText: options => option<string> = _text(true, Some(nullConverter))
 
-let integer: options => intColumn = _integer(false, None)
-let optionalInteger: options => optionalIntColumn = _integer(true, Some(nullConverter))
+let integer: options => int = _integer(false, None)
+let optionalInteger: options => option<int> = _integer(true, Some(nullConverter))
 
-let float: options => floatColumn = _float(false, None)
-let optionalFloat: options => optionalFloatColumn = _float(true, Some(nullConverter))
+let float: options => float = _float(false, None)
+let optionalFloat: options => option<float> = _float(true, Some(nullConverter))
 
-let date: options => dateColumn = _date(
+let date: options => Js.Date.t = _date(
   false,
   Some({
     dbToRes: Js.Date.fromString,
@@ -124,7 +113,7 @@ let date: options => dateColumn = _date(
   }),
 )
 
-let optionalDate: options => optionalDateColumn = _date(
+let optionalDate: options => option<Js.Date.t> = _date(
   true,
   Some({
     dbToRes: value => value->Js.Null.toOption->Belt.Option.map(Js.Date.fromString),

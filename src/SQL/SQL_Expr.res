@@ -1,10 +1,15 @@
 let simpleExpressionToSQL = (column, right, operator) => {
+  let column = Schema.Column.fromAny(column)
+  let right = Node.fromAny(right)
+
   let valueString = switch right {
   | Node.Literal(value) => SQL_Common.convertIfNeccessary(value, column)->Utils.stringify
   | Node.Column(column) => `${column.table}.${column.name}`
   | Node.Query(sql) => `(${sql->Obj.magic})`
   | _ => Js.Exn.raiseError("not implemented yet")
   }
+
+  let column = Schema.Column.fromAny(column)
 
   `${column.table}.${column.name} ${operator} ${valueString}`
 }
@@ -56,8 +61,8 @@ let rec expressionToSQL = expression =>
   | QueryBuilder.Expr.GreaterThanEqual(left, right) => simpleExpressionToSQL(left, right, ">=")
   | QueryBuilder.Expr.LessThan(left, right) => simpleExpressionToSQL(left, right, "<")
   | QueryBuilder.Expr.LessThanEqual(left, right) => simpleExpressionToSQL(left, right, "<=")
-  | QueryBuilder.Expr.Between(column, min, max) => betweenExpressionToSQL(column, min, max, false)
-  | QueryBuilder.Expr.NotBetween(column, min, max) => betweenExpressionToSQL(column, min, max, true)
-  | QueryBuilder.Expr.In(column, values) => inExpressionToSQL(column, values, false)
-  | QueryBuilder.Expr.NotIn(column, values) => inExpressionToSQL(column, values, true)
+  /* | QueryBuilder.Expr.Between(column, min, max) => betweenExpressionToSQL(column, min, max, false) */
+  /* | QueryBuilder.Expr.NotBetween(column, min, max) => betweenExpressionToSQL(column, min, max, true) */
+  /* | QueryBuilder.Expr.In(column, values) => inExpressionToSQL(column, values, false) */
+  /* | QueryBuilder.Expr.NotIn(column, values) => inExpressionToSQL(column, values, true) */
   }

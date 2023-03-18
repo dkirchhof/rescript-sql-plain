@@ -3,11 +3,11 @@ type t<'columns> = {
   tableColumns: 'columns,
 }
 
-type tx<'columns> = {
+type tx<'columns, 'a> = {
   tableName: string,
   tableColumns: 'columns,
   patch: 'columns,
-  selection: option<QueryBuilder_Expr.t>,
+  selection: option<QueryBuilder_Expr.t<'a>>,
 }
 
 let update = (table: Schema.Table.t<_>) => {

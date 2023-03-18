@@ -16,11 +16,11 @@ let connection = SQLite3.createConnection(":memory:")
 
 module Artists = {
   type columns = {
-    id: Schema.Column.intColumn,
-    name: Schema.Column.stringColumn,
+    id: int,
+    name: string,
   }
 
-  type constraints = {pk: Schema.Constraint.t}
+  type constraints = {pk: Schema.Constraint.t<int>}
 
   let table = Schema.Table.make(
     "artists",
@@ -36,13 +36,13 @@ module Artists = {
 
 module Albums = {
   type columns = {
-    id: Schema.Column.intColumn,
-    artistId: Schema.Column.intColumn,
-    name: Schema.Column.stringColumn,
-    year: Schema.Column.intColumn,
+    id: int,
+    artistId: int,
+    name: string,
+    year: int,
   }
 
-  type constraints = {pk: Schema.Constraint.t, fkArtist: Schema.Constraint.t}
+  type constraints = {pk: Schema.Constraint.t<int>, fkArtist: Schema.Constraint.t<int>}
 
   let table = Schema.Table.make(
     "albums",
@@ -66,13 +66,13 @@ module Albums = {
 
 module Songs = {
   type columns = {
-    id: Schema.Column.intColumn,
-    albumId: Schema.Column.intColumn,
-    name: Schema.Column.stringColumn,
-    duration: Schema.Column.stringColumn,
+    id: int,
+    albumId: int,
+    name: string,
+    duration: string,
   }
 
-  type constraints = {pk: Schema.Constraint.t, fkAlbum: Schema.Constraint.t}
+  type constraints = {pk: Schema.Constraint.t<int>, fkAlbum: Schema.Constraint.t<int>}
 
   let table = Schema.Table.make(
     "songs",
@@ -96,11 +96,11 @@ module Songs = {
 
 module Users = {
   type columns = {
-    id: Schema.Column.intColumn,
-    name: Schema.Column.stringColumn,
+    id: int,
+    name: string,
   }
 
-  type constraints = {pk: Schema.Constraint.t}
+  type constraints = {pk: Schema.Constraint.t<int>}
 
   let table = Schema.Table.make(
     "users",
@@ -116,15 +116,15 @@ module Users = {
 
 module Favorites = {
   type columns = {
-    songId: Schema.Column.intColumn,
-    userId: Schema.Column.intColumn,
-    likedAt: Schema.Column.dateColumn,
+    songId: int,
+    userId: int,
+    likedAt: Js.Date.t,
   }
 
   type constraints = {
-    pk: Schema.Constraint.t,
-    fkSong: Schema.Constraint.t,
-    fkUser: Schema.Constraint.t,
+    pk: Schema.Constraint.t<int>,
+    fkSong: Schema.Constraint.t<int>,
+    fkUser: Schema.Constraint.t<int>,
   }
 
   let table = Schema.Table.make(
@@ -188,18 +188,18 @@ let insertData = () => {
   let q1 =
     insertInto(Artists.table)
     ->values([
-      {id: literal(1), name: literal("Architects")},
-      {id: literal(2), name: literal("While She Sleeps")},
-      {id: literal(3), name: literal("Misfits")},
-      {id: literal(4), name: literal("Iron Maiden")},
-      {id: literal(5), name: literal("UPDATEME")},
+      {id: 1, name: "Architects"},
+      {id: 2, name: "While She Sleeps"},
+      {id: 3, name: "Misfits"},
+      {id: 4, name: "Iron Maiden"},
+      {id: 5, name: "UPDATEME"},
     ])
     ->SQL.fromInsertQuery
 
   let q2 =
     insertInto(Albums.table)
     ->values([
-      {id: literal(1), artistId: literal(1), name: literal("Hollow Crown"), year: literal(2009)},
+      {id: 1, artistId: 1, name: "Hollow Crown", year: 2009},
       /* {id: 2, artistId: 1, name: "Lost Forever / Lost Together", year: 2014}, */
       /* {id: 3, artistId: 2, name: "This Is the Six", year: 2012}, */
       /* {id: 4, artistId: 2, name: "Brainwashed", year: 2015}, */
@@ -218,10 +218,10 @@ let insertData = () => {
     insertInto(Songs.table)
     ->values([
       {
-        id: literal(1),
-        albumId: literal(1),
-        name: literal("Early Grave"),
-        duration: literal("3:32"),
+        id: 1,
+        albumId: 1,
+        name: "Early Grave",
+        duration: "3:32",
       },
       /* {id: 2, albumId: 1, name: "Dethroned", duration: "3:06"}, */
       /* {id: 3, albumId: 1, name: "Numbers Count for Nothing", duration: "3:50"}, */
@@ -341,15 +341,12 @@ let insertData = () => {
     ])
     ->SQL.fromInsertQuery
 
-  let q4 =
-    insertInto(Users.table)
-    ->values([{id: literal(1), name: literal("John Doe")}])
-    ->SQL.fromInsertQuery
+  let q4 = insertInto(Users.table)->values([{id: 1, name: "John Doe"}])->SQL.fromInsertQuery
 
   let q5 =
     insertInto(Favorites.table)
     ->values([
-      {userId: literal(1), songId: literal(1), likedAt: literal(Js.Date.fromString("2022-01-01"))},
+      {userId: 1, songId: 1, likedAt: Js.Date.fromString("2022-01-01")},
       /* {userId: 1, songId: 2, likedAt: Js.Date.fromString("2022-02-01")}, */
     ])
     ->SQL.fromInsertQuery
@@ -384,9 +381,9 @@ let updateData = () => {
     update(Artists.table)
     ->set({
       id: skip,
-      name: literal("DELETEME"),
+      name: "DELETEME",
     })
-    ->where(c => equal(c.name, Literal("UPDATEME")))
+    ->where(c => equal(c.name, "UPDATEME"))
     ->SQL.fromUpdateQuery
 
   log(q1)
@@ -399,8 +396,7 @@ let deleteData = () => {
   open QueryBuilder.Delete
   open QueryBuilder.Expr
 
-  let q1 =
-    deleteFrom(Artists.table)->where(c => equal(c.name, Literal("DELETEME")))->SQL.fromDeleteQuery
+  let q1 = deleteFrom(Artists.table)->where(c => equal(c.name, "DELETEME"))->SQL.fromDeleteQuery
 
   log(q1)
   log("")
@@ -414,8 +410,8 @@ let selectNameFromArtist1 = () => {
 
   let q =
     from(Artists.table)
-    ->where(artist => equal(artist.id, Literal(1)))
-    ->select(artist => {"name": column(artist.name)})
+    ->where(artist => equal(artist.id, 1))
+    ->select(artist => {"name": artist.name})
 
   let sql = SQL.fromSelectQuery(q)
 
@@ -427,179 +423,179 @@ let selectNameFromArtist1 = () => {
   log(result)
 }
 
-let selectArtistsWithAlbumsWithSongs = () => {
-  open QueryBuilder.Select
+/* let selectArtistsWithAlbumsWithSongs = () => { */
+/* open QueryBuilder.Select */
 
-  let q =
-    from(Artists.table)
-    ->join1(Albums.table, Left, ((artist, album)) => (album.artistId, artist.id))
-    ->join2(Songs.table, Left, ((_artist, album, song)) => (song.albumId, album.id))
-    ->select(((artist, album, song)) =>
-      {
-        "artistId": column(artist.id),
-        "artistName": column(artist.name),
-        "albumId": column(album.id),
-        "albumName": column(album.name),
-        "songId": column(song.id),
-        "songName": column(song.name),
-      }
-    )
+/* let q = */
+/* from(Artists.table) */
+/* ->join1(Albums.table, Left, ((artist, album)) => (album.artistId, artist.id)) */
+/* ->join2(Songs.table, Left, ((_artist, album, song)) => (song.albumId, album.id)) */
+/* ->select(((artist, album, song)) => */
+/* { */
+/* "artistId": column(artist.id), */
+/* "artistName": column(artist.name), */
+/* "albumId": column(album.id), */
+/* "albumName": column(album.name), */
+/* "songId": column(song.id), */
+/* "songName": column(song.name), */
+/* } */
+/* ) */
 
-  let sql = SQL.fromSelectQuery(q)
-  log(sql)
+/* let sql = SQL.fromSelectQuery(q) */
+/* log(sql) */
 
-  let mapper = map(q)
-  let result = connection->SQLite3.prepare(sql)->SQLite3.all->Js.Array2.map(mapper)
+/* let mapper = map(q) */
+/* let result = connection->SQLite3.prepare(sql)->SQLite3.all->Js.Array2.map(mapper) */
 
-  log(result)
-}
+/* log(result) */
+/* } */
 
-let selectFavoritesOfUser1 = () => {
-  open QueryBuilder.Select
+/* let selectFavoritesOfUser1 = () => { */
+/* open QueryBuilder.Select */
 
-  let q =
-    from(Favorites.table)
-    ->join1(Songs.table, Inner, ((favorite, song)) => (favorite.songId, song.id))
-    ->join2(Albums.table, Inner, ((_favorite, song, album)) => (song.albumId, album.id))
-    ->join3(Artists.table, Inner, ((_favorite, _song, album, artist)) => (
-      album.artistId,
-      artist.id,
-    ))
-    ->select(((favorite, song, album, artist)) =>
-      {
-        "songName": column(song.name),
-        "albumName": column(album.name),
-        "artistName": column(artist.name),
-        "likedAt": column(favorite.likedAt),
-      }
-    )
+/* let q = */
+/* from(Favorites.table) */
+/* ->join1(Songs.table, Inner, ((favorite, song)) => (favorite.songId, song.id)) */
+/* ->join2(Albums.table, Inner, ((_favorite, song, album)) => (song.albumId, album.id)) */
+/* ->join3(Artists.table, Inner, ((_favorite, _song, album, artist)) => ( */
+/* album.artistId, */
+/* artist.id, */
+/* )) */
+/* ->select(((favorite, song, album, artist)) => */
+/* { */
+/* "songName": column(song.name), */
+/* "albumName": column(album.name), */
+/* "artistName": column(artist.name), */
+/* "likedAt": column(favorite.likedAt), */
+/* } */
+/* ) */
 
-  let sql = SQL.fromSelectQuery(q)
-  log(sql)
+/* let sql = SQL.fromSelectQuery(q) */
+/* log(sql) */
 
-  let mapper = map(q)
-  let result = connection->SQLite3.prepare(sql)->SQLite3.all->Js.Array2.map(mapper)
+/* let mapper = map(q) */
+/* let result = connection->SQLite3.prepare(sql)->SQLite3.all->Js.Array2.map(mapper) */
 
-  log(result)
-}
+/* log(result) */
+/* } */
 
-let expressionsTest = () => {
-  open QueryBuilder.Select
-  open QueryBuilder.Expr
+/* let expressionsTest = () => { */
+/* open QueryBuilder.Select */
+/* open QueryBuilder.Expr */
 
-  let expressions = [
-    (c: Artists.columns) => equal(c.id, Literal(1)),
-    (c: Artists.columns) => notEqual(c.id, Literal(1)),
-    (c: Artists.columns) => greaterThan(c.id, Literal(1)),
-    (c: Artists.columns) => greaterThanEqual(c.id, Literal(1)),
-    (c: Artists.columns) => lessThan(c.id, Literal(1)),
-    (c: Artists.columns) => lessThanEqual(c.id, Literal(1)),
-    (c: Artists.columns) => between(c.id, Literal(1), Literal(2)),
-    (c: Artists.columns) => notBetween(c.id, Literal(1), Literal(2)),
-    (c: Artists.columns) => in_(c.id, [Literal(1), Literal(2)]),
-    (c: Artists.columns) => notIn(c.id, [Literal(1), Literal(2)]),
-    (c: Artists.columns) => and_([equal(c.id, Literal(1)), notEqual(c.name, Literal("test"))]),
-    (c: Artists.columns) => or([equal(c.id, Literal(1)), notEqual(c.name, Literal("test"))]),
-  ]
+/* let expressions = [ */
+/* (c: Artists.columns) => equal(c.id, Literal(1)), */
+/* (c: Artists.columns) => notEqual(c.id, Literal(1)), */
+/* (c: Artists.columns) => greaterThan(c.id, Literal(1)), */
+/* (c: Artists.columns) => greaterThanEqual(c.id, Literal(1)), */
+/* (c: Artists.columns) => lessThan(c.id, Literal(1)), */
+/* (c: Artists.columns) => lessThanEqual(c.id, Literal(1)), */
+/* (c: Artists.columns) => between(c.id, Literal(1), Literal(2)), */
+/* (c: Artists.columns) => notBetween(c.id, Literal(1), Literal(2)), */
+/* (c: Artists.columns) => in_(c.id, [Literal(1), Literal(2)]), */
+/* (c: Artists.columns) => notIn(c.id, [Literal(1), Literal(2)]), */
+/* (c: Artists.columns) => and_([equal(c.id, Literal(1)), notEqual(c.name, Literal("test"))]), */
+/* (c: Artists.columns) => or([equal(c.id, Literal(1)), notEqual(c.name, Literal("test"))]), */
+/* ] */
 
-  expressions->Js.Array2.forEach(expression => {
-    from(Artists.table)
-    ->where(expression)
-    ->select(c => {"id": column(c.id)})
-    ->SQL.fromSelectQuery
-    ->Js.log
+/* expressions->Js.Array2.forEach(expression => { */
+/* from(Artists.table) */
+/* ->where(expression) */
+/* ->select(c => {"id": column(c.id)}) */
+/* ->SQL.fromSelectQuery */
+/* ->Js.log */
 
-    Js.log("")
-  })
-}
+/* Js.log("") */
+/* }) */
+/* } */
 
-let limitAndOffsetTest = () => {
-  open QueryBuilder.Select
+/* let limitAndOffsetTest = () => { */
+/* open QueryBuilder.Select */
 
-  from(Artists.table)
-  ->limit(10)
-  ->offset(5)
-  ->select(c => {"id": column(c.id)})
-  ->SQL.fromSelectQuery
-  ->Js.log
-  Js.log("")
-}
+/* from(Artists.table) */
+/* ->limit(10) */
+/* ->offset(5) */
+/* ->select(c => {"id": column(c.id)}) */
+/* ->SQL.fromSelectQuery */
+/* ->Js.log */
+/* Js.log("") */
+/* } */
 
-let orderByTest = () => {
-  open QueryBuilder.Select
+/* let orderByTest = () => { */
+/* open QueryBuilder.Select */
 
-  from(Artists.table)
-  ->addOrderBy(c => c.id, Asc)
-  ->addOrderBy(c => c.name, Desc)
-  ->select(c => {"id": column(c.id)})
-  ->SQL.fromSelectQuery
-  ->Js.log
+/* from(Artists.table) */
+/* ->addOrderBy(c => c.id, Asc) */
+/* ->addOrderBy(c => c.name, Desc) */
+/* ->select(c => {"id": column(c.id)}) */
+/* ->SQL.fromSelectQuery */
+/* ->Js.log */
 
-  Js.log("")
-}
+/* Js.log("") */
+/* } */
 
-let groupByTest = () => {
-  open QueryBuilder.Select
-  open QueryBuilder.Expr
+/* let groupByTest = () => { */
+/* open QueryBuilder.Select */
+/* open QueryBuilder.Expr */
 
-  from(Artists.table)
-  ->addGroupBy(c => c.id)
-  ->addGroupBy(c => c.name)
-  ->having(c => equal(c.id, Literal(1)))
-  ->select(c => {"id": column(c.id)})
-  ->SQL.fromSelectQuery
-  ->Js.log
+/* from(Artists.table) */
+/* ->addGroupBy(c => c.id) */
+/* ->addGroupBy(c => c.name) */
+/* ->having(c => equal(c.id, Literal(1))) */
+/* ->select(c => {"id": column(c.id)}) */
+/* ->SQL.fromSelectQuery */
+/* ->Js.log */
 
-  Js.log("")
-}
+/* Js.log("") */
+/* } */
 
-let subQueryTest = () => {
-  open QueryBuilder.Select
-  open QueryBuilder.Expr
-  open SubQueryBuilder
+/* let subQueryTest = () => { */
+/* open QueryBuilder.Select */
+/* open QueryBuilder.Expr */
+/* open SubQueryBuilder */
 
-  from(Artists.table)
-  ->where(c => equal(c.id, from(Artists.table)->make(c => Agg.max(c.id))))
-  ->select(c => {"id": column(c.id)})
-  ->SQL.fromSelectQuery
-  ->Js.log
+/* from(Artists.table) */
+/* ->where(c => equal(c.id, from(Artists.table)->make(c => Agg.max(c.id)))) */
+/* ->select(c => {"id": column(c.id)}) */
+/* ->SQL.fromSelectQuery */
+/* ->Js.log */
 
-  Js.log("")
-}
+/* Js.log("") */
+/* } */
 
-let aggregationTest = () => {
-  open QueryBuilder.Select
+/* let aggregationTest = () => { */
+/* open QueryBuilder.Select */
 
-  let q = from(Artists.table)->select(c =>
-    {
-      "count": Agg.count(c.name),
-      "sum": Agg.sum(c.name),
-      "avg": Agg.avg(c.name),
-      "min": Agg.min(c.name),
-      "max": Agg.max(c.name),
-    }
-  )
+/* let q = from(Artists.table)->select(c => */
+/* { */
+/* "count": Agg.count(c.name), */
+/* "sum": Agg.sum(c.name), */
+/* "avg": Agg.avg(c.name), */
+/* "min": Agg.min(c.name), */
+/* "max": Agg.max(c.name), */
+/* } */
+/* ) */
 
-  let sql = SQL.fromSelectQuery(q)
-  log(sql)
+/* let sql = SQL.fromSelectQuery(q) */
+/* log(sql) */
 
-  let mapper = map(q)
-  let result = connection->SQLite3.prepare(sql)->SQLite3.all->Js.Array2.map(mapper)
+/* let mapper = map(q) */
+/* let result = connection->SQLite3.prepare(sql)->SQLite3.all->Js.Array2.map(mapper) */
 
-  log(result)
-  log("")
-}
+/* log(result) */
+/* log("") */
+/* } */
 
 createTables()
 insertData()
 updateData()
 deleteData()
-selectNameFromArtist1()
-selectArtistsWithAlbumsWithSongs()
-selectFavoritesOfUser1()
-expressionsTest()
-limitAndOffsetTest()
-orderByTest()
-groupByTest()
-subQueryTest()
-aggregationTest()
+/* selectNameFromArtist1() */
+/* selectArtistsWithAlbumsWithSongs() */
+/* selectFavoritesOfUser1() */
+/* expressionsTest() */
+/* limitAndOffsetTest() */
+/* orderByTest() */
+/* groupByTest() */
+/* subQueryTest() */
+/* aggregationTest() */

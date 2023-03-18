@@ -1,71 +1,71 @@
-type rec t =
-  | And(array<t>)
-  | Or(array<t>)
-  | Equal(Schema.Column.unknownColumn, Node.unknownNode)
-  | NotEqual(Schema.Column.unknownColumn, Node.unknownNode)
-  | GreaterThan(Schema.Column.unknownColumn, Node.unknownNode)
-  | GreaterThanEqual(Schema.Column.unknownColumn, Node.unknownNode)
-  | LessThan(Schema.Column.unknownColumn, Node.unknownNode)
-  | LessThanEqual(Schema.Column.unknownColumn, Node.unknownNode)
-  | Between(Schema.Column.unknownColumn, Node.unknownNode, Node.unknownNode)
-  | NotBetween(Schema.Column.unknownColumn, Node.unknownNode, Node.unknownNode)
-  | In(Schema.Column.unknownColumn, array<Node.unknownNode>)
-  | NotIn(Schema.Column.unknownColumn, array<Node.unknownNode>)
+type rec t<'a> =
+  | And(array<t<'a>>)
+  | Or(array<t<'a>>)
+  | Equal('a, 'a)
+  | NotEqual('a, 'a)
+  | GreaterThan('a, 'a)
+  | GreaterThanEqual('a, 'a)
+  | LessThan('a, 'a)
+  | LessThanEqual('a, 'a)
+  | Between('a, 'a, 'a)
+  | NotBetween('a, 'a, 'a)
+  | In('a, array<'a>)
+  | NotIn('a, array<'a>)
 
 let and_ = expressions => And(expressions)
 let or = expressions => Or(expressions)
 
-let equal = (column: Schema.Column.t<'t, _>, right: Node.t<'t, _>) => Equal(
-  column->Schema.Column.toUnknownColumn,
-  right->Node.toUnknown,
+let equal = (column: 't, right:'t) => Equal(
+  column,
+  right,
 )
 
-let notEqual = (column: Schema.Column.t<'t, _>, right: Node.t<'t, _>) => NotEqual(
-  column->Schema.Column.toUnknownColumn,
-  right->Node.toUnknown,
-)
+/* let notEqual = (column: Schema.Column.t<'t, _>, right: Node.t<'t, _>) => NotEqual( */
+/*   column, */
+/*   right, */
+/* ) */
 
-let greaterThan = (column: Schema.Column.t<'t, _>, right: Node.t<'t, _>) => GreaterThan(
-  column->Schema.Column.toUnknownColumn,
-  right->Node.toUnknown,
-)
+/* let greaterThan = (column: Schema.Column.t<'t, _>, right: Node.t<'t, _>) => GreaterThan( */
+/*   column->Schema.Column.toUnknownColumn, */
+/*   right->Node.toUnknown, */
+/* ) */
 
-let greaterThanEqual = (column: Schema.Column.t<'t, _>, right: Node.t<'t, _>) => GreaterThanEqual(
-  column->Schema.Column.toUnknownColumn,
-  right->Node.toUnknown,
-)
+/* let greaterThanEqual = (column: Schema.Column.t<'t, _>, right: Node.t<'t, _>) => GreaterThanEqual( */
+/*   column->Schema.Column.toUnknownColumn, */
+/*   right->Node.toUnknown, */
+/* ) */
 
-let lessThan = (column: Schema.Column.t<'t, _>, right: Node.t<'t, _>) => LessThan(
-  column->Schema.Column.toUnknownColumn,
-  right->Node.toUnknown,
-)
+/* let lessThan = (column: Schema.Column.t<'t, _>, right: Node.t<'t, _>) => LessThan( */
+/*   column->Schema.Column.toUnknownColumn, */
+/*   right->Node.toUnknown, */
+/* ) */
 
-let lessThanEqual = (column: Schema.Column.t<'t, _>, right: Node.t<'t, _>) => LessThanEqual(
-  column->Schema.Column.toUnknownColumn,
-  right->Node.toUnknown,
-)
+/* let lessThanEqual = (column: Schema.Column.t<'t, _>, right: Node.t<'t, _>) => LessThanEqual( */
+/*   column->Schema.Column.toUnknownColumn, */
+/*   right->Node.toUnknown, */
+/* ) */
 
-/* let \"==" = equal */
-/* let \"!=" = notEqual */
+/* /1* let \"==" = equal *1/ */
+/* /1* let \"!=" = notEqual *1/ */
 
-let between = (column: Schema.Column.t<'t, _>, min: Node.t<'t, _>, max: Node.t<'t, _>) => Between(
-  column->Schema.Column.toUnknownColumn,
-  min->Node.toUnknown,
-  max->Node.toUnknown,
-)
+/* let between = (column: Schema.Column.t<'t, _>, min: Node.t<'t, _>, max: Node.t<'t, _>) => Between( */
+/*   column->Schema.Column.toUnknownColumn, */
+/*   min->Node.toUnknown, */
+/*   max->Node.toUnknown, */
+/* ) */
 
-let notBetween = (
-  column: Schema.Column.t<'t, _>,
-  min: Node.t<'t, _>,
-  max: Node.t<'t, _>,
-) => NotBetween(column->Schema.Column.toUnknownColumn, min->Node.toUnknown, max->Node.toUnknown)
+/* let notBetween = ( */
+/*   column: Schema.Column.t<'t, _>, */
+/*   min: Node.t<'t, _>, */
+/*   max: Node.t<'t, _>, */
+/* ) => NotBetween(column->Schema.Column.toUnknownColumn, min->Node.toUnknown, max->Node.toUnknown) */
 
-let in_ = (column: Schema.Column.t<'t, _>, values: array<Node.t<'t, _>>) => In(
-  column->Schema.Column.toUnknownColumn,
-  values->Node.toUnknownArray,
-)
+/* let in_ = (column: Schema.Column.t<'t, _>, values: array<Node.t<'t, _>>) => In( */
+/*   column->Schema.Column.toUnknownColumn, */
+/*   values->Node.toUnknownArray, */
+/* ) */
 
-let notIn = (column: Schema.Column.t<'t, _>, values: array<Node.t<'t, _>>) => NotIn(
-  column->Schema.Column.toUnknownColumn,
-  values->Node.toUnknownArray,
-)
+/* let notIn = (column: Schema.Column.t<'t, _>, values: array<Node.t<'t, _>>) => NotIn( */
+/*   column->Schema.Column.toUnknownColumn, */
+/*   values->Node.toUnknownArray, */
+/* ) */
