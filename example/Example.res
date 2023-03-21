@@ -14,6 +14,8 @@ let log: 'a => unit = %raw(`
 
 let connection = SQLite3.createConnection(":memory:")
 
+let getRows = sql => connection->SQLite3.prepare(sql)->SQLite3.all
+
 module Artists = {
   type columns = {
     id: int,
@@ -383,7 +385,7 @@ let updateData = () => {
       id: skip,
       name: "DELETEME",
     })
-    ->where(c => equal(c.name, "UPDATEME"))
+    ->where(c => Equal(c.name, "UPDATEME"))
     ->SQL.fromUpdateQuery
 
   log(q1)
@@ -396,158 +398,190 @@ let deleteData = () => {
   open QueryBuilder.Delete
   open QueryBuilder.Expr
 
-  let q1 = deleteFrom(Artists.table)->where(c => equal(c.name, "DELETEME"))->SQL.fromDeleteQuery
+  let q1 = deleteFrom(Artists.table)->where(c => Equal(c.name, "DELETEME"))->SQL.fromDeleteQuery
+  let q2 = deleteFrom(Songs.table)->where(c => Equal("DELETEME", c.name))->SQL.fromDeleteQuery
+  let q3 = deleteFrom(Songs.table)->where(c => Equal(c.name, c.duration))->SQL.fromDeleteQuery
 
   log(q1)
   log("")
 
+  log(q2)
+  log("")
+
+  log(q3)
+  log("")
+
   SQLite3.exec(connection, q1)
+  SQLite3.exec(connection, q2)
+  SQLite3.exec(connection, q3)
 }
 
 let selectNameFromArtist1 = () => {
   open QueryBuilder.Select
   open QueryBuilder.Expr
+  open QueryRunner.Select
 
   let q =
     from(Artists.table)
-    ->where(artist => equal(artist.id, 1))
-    ->select(artist => {"name": artist.name})
+    ->where(artist => Equal(artist.id, 1))
+    ->select(artist => Nest.array({"name": Nest.column(artist.name)}))
 
   let sql = SQL.fromSelectQuery(q)
 
   log(sql)
+  log("")
 
-  let mapper = map(q)
-  let result = connection->SQLite3.prepare(sql)->SQLite3.get->Belt.Option.map(mapper)
+  let result = execute(q, getRows)
 
   log(result)
+  log("")
 }
 
-/* let selectArtistsWithAlbumsWithSongs = () => { */
-/* open QueryBuilder.Select */
+let selectArtistsWithAlbumsWithSongs = () => {
+  open QueryBuilder.Select
+  open QueryRunner.Select
 
-/* let q = */
-/* from(Artists.table) */
-/* ->join1(Albums.table, Left, ((artist, album)) => (album.artistId, artist.id)) */
-/* ->join2(Songs.table, Left, ((_artist, album, song)) => (song.albumId, album.id)) */
-/* ->select(((artist, album, song)) => */
-/* { */
-/* "artistId": column(artist.id), */
-/* "artistName": column(artist.name), */
-/* "albumId": column(album.id), */
-/* "albumName": column(album.name), */
-/* "songId": column(song.id), */
-/* "songName": column(song.name), */
-/* } */
-/* ) */
+  let q =
+    from(Artists.table)
+    ->join1(Albums.table, Left, ((artist, album)) => (album.artistId, artist.id))
+    ->join2(Songs.table, Left, ((_artist, album, song)) => (song.albumId, album.id))
+    ->select(((artist, album, song)) =>
+      Nest.group(
+        artist.id,
+        {
+          "id": Nest.column(artist.id),
+          "name": Nest.column(artist.name),
+          "albums": Nest.group(
+            album.id,
+            {
+              "id": Nest.column(album.id),
+              "name": Nest.column(album.name),
+              "songs": Nest.group(
+                song.id,
+                {
+                  "id": Nest.column(song.id),
+                  "name": Nest.column(song.name),
+                },
+              ),
+            },
+          ),
+        },
+      )
+    )
 
-/* let sql = SQL.fromSelectQuery(q) */
-/* log(sql) */
+  let sql = SQL.fromSelectQuery(q)
 
-/* let mapper = map(q) */
-/* let result = connection->SQLite3.prepare(sql)->SQLite3.all->Js.Array2.map(mapper) */
+  log(sql)
+  log("")
 
-/* log(result) */
-/* } */
+  let result = execute(q, getRows)
 
-/* let selectFavoritesOfUser1 = () => { */
-/* open QueryBuilder.Select */
+  log(result)
+  log("")
+}
 
-/* let q = */
-/* from(Favorites.table) */
-/* ->join1(Songs.table, Inner, ((favorite, song)) => (favorite.songId, song.id)) */
-/* ->join2(Albums.table, Inner, ((_favorite, song, album)) => (song.albumId, album.id)) */
-/* ->join3(Artists.table, Inner, ((_favorite, _song, album, artist)) => ( */
-/* album.artistId, */
-/* artist.id, */
-/* )) */
-/* ->select(((favorite, song, album, artist)) => */
-/* { */
-/* "songName": column(song.name), */
-/* "albumName": column(album.name), */
-/* "artistName": column(artist.name), */
-/* "likedAt": column(favorite.likedAt), */
-/* } */
-/* ) */
+let selectFavoritesOfUser1 = () => {
+  open QueryBuilder.Select
+  open QueryRunner.Select
 
-/* let sql = SQL.fromSelectQuery(q) */
-/* log(sql) */
+  let q =
+    from(Favorites.table)
+    ->join1(Songs.table, Inner, ((favorite, song)) => (favorite.songId, song.id))
+    ->join2(Albums.table, Inner, ((_favorite, song, album)) => (song.albumId, album.id))
+    ->join3(Artists.table, Inner, ((_favorite, _song, album, artist)) => (
+      album.artistId,
+      artist.id,
+    ))
+    ->select(((favorite, song, album, artist)) =>
+      Nest.array({
+        "songName": Nest.column(song.name),
+        "albumName": Nest.column(album.name),
+        "artistName": Nest.column(artist.name),
+        "likedAt": Nest.column(favorite.likedAt),
+      })
+    )
 
-/* let mapper = map(q) */
-/* let result = connection->SQLite3.prepare(sql)->SQLite3.all->Js.Array2.map(mapper) */
+  let sql = SQL.fromSelectQuery(q)
 
-/* log(result) */
-/* } */
+  log(sql)
+  log("")
 
-/* let expressionsTest = () => { */
-/* open QueryBuilder.Select */
-/* open QueryBuilder.Expr */
+  let result = execute(q, getRows)
 
-/* let expressions = [ */
-/* (c: Artists.columns) => equal(c.id, Literal(1)), */
-/* (c: Artists.columns) => notEqual(c.id, Literal(1)), */
-/* (c: Artists.columns) => greaterThan(c.id, Literal(1)), */
-/* (c: Artists.columns) => greaterThanEqual(c.id, Literal(1)), */
-/* (c: Artists.columns) => lessThan(c.id, Literal(1)), */
-/* (c: Artists.columns) => lessThanEqual(c.id, Literal(1)), */
-/* (c: Artists.columns) => between(c.id, Literal(1), Literal(2)), */
-/* (c: Artists.columns) => notBetween(c.id, Literal(1), Literal(2)), */
-/* (c: Artists.columns) => in_(c.id, [Literal(1), Literal(2)]), */
-/* (c: Artists.columns) => notIn(c.id, [Literal(1), Literal(2)]), */
-/* (c: Artists.columns) => and_([equal(c.id, Literal(1)), notEqual(c.name, Literal("test"))]), */
-/* (c: Artists.columns) => or([equal(c.id, Literal(1)), notEqual(c.name, Literal("test"))]), */
-/* ] */
+  log(result)
+  log("")
+}
 
-/* expressions->Js.Array2.forEach(expression => { */
-/* from(Artists.table) */
-/* ->where(expression) */
-/* ->select(c => {"id": column(c.id)}) */
-/* ->SQL.fromSelectQuery */
-/* ->Js.log */
+let expressionsTest = () => {
+  open QueryBuilder.Select
+  open QueryBuilder.Expr
 
-/* Js.log("") */
-/* }) */
-/* } */
+  let expressions = [
+    (c: Artists.columns) => Equal(c.id, 1),
+    (c: Artists.columns) => NotEqual(c.id, 1),
+    (c: Artists.columns) => GreaterThan(c.id, 1),
+    (c: Artists.columns) => GreaterThanEqual(c.id, 1),
+    (c: Artists.columns) => LessThan(c.id, 1),
+    (c: Artists.columns) => LessThanEqual(c.id, 1),
+    (c: Artists.columns) => Between(c.id, 1, 2),
+    (c: Artists.columns) => NotBetween(c.id, 1, 2),
+    (c: Artists.columns) => In(c.id, [1, 2]),
+    (c: Artists.columns) => NotIn(c.id, [1, 2]),
+    (c: Artists.columns) => and2((Equal(c.id, 1), NotEqual(c.name, "test"))),
+    (c: Artists.columns) => or2((Equal(c.id, 1), NotEqual(c.name, "test"))),
+  ]
 
-/* let limitAndOffsetTest = () => { */
-/* open QueryBuilder.Select */
+  expressions->Js.Array2.forEach(expression => {
+    from(Artists.table)
+    ->where(expression)
+    ->select(c => Nest.array({"id": Nest.column(c.id)}))
+    ->SQL.fromSelectQuery
+    ->Js.log
 
-/* from(Artists.table) */
-/* ->limit(10) */
-/* ->offset(5) */
-/* ->select(c => {"id": column(c.id)}) */
-/* ->SQL.fromSelectQuery */
-/* ->Js.log */
-/* Js.log("") */
-/* } */
+    Js.log("")
+  })
+}
 
-/* let orderByTest = () => { */
-/* open QueryBuilder.Select */
+let limitAndOffsetTest = () => {
+  open QueryBuilder.Select
 
-/* from(Artists.table) */
-/* ->addOrderBy(c => c.id, Asc) */
-/* ->addOrderBy(c => c.name, Desc) */
-/* ->select(c => {"id": column(c.id)}) */
-/* ->SQL.fromSelectQuery */
-/* ->Js.log */
+  from(Artists.table)
+  ->limit(10)
+  ->offset(5)
+  ->select(c => Nest.array({"id": Nest.column(c.id)}))
+  ->SQL.fromSelectQuery
+  ->Js.log
 
-/* Js.log("") */
-/* } */
+  Js.log("")
+}
 
-/* let groupByTest = () => { */
-/* open QueryBuilder.Select */
-/* open QueryBuilder.Expr */
+let orderByTest = () => {
+  open QueryBuilder.Select
 
-/* from(Artists.table) */
-/* ->addGroupBy(c => c.id) */
-/* ->addGroupBy(c => c.name) */
-/* ->having(c => equal(c.id, Literal(1))) */
-/* ->select(c => {"id": column(c.id)}) */
-/* ->SQL.fromSelectQuery */
-/* ->Js.log */
+  from(Artists.table)
+  ->addOrderBy(c => c.id, Asc)
+  ->addOrderBy(c => c.name, Desc)
+  ->select(c => {"id": c.id})
+  ->SQL.fromSelectQuery
+  ->Js.log
 
-/* Js.log("") */
-/* } */
+  Js.log("")
+}
+
+let groupByTest = () => {
+  open QueryBuilder.Select
+  open QueryBuilder.Expr
+
+  from(Artists.table)
+  ->addGroupBy(c => c.id)
+  ->addGroupBy(c => c.name)
+  ->having(c => Equal(c.id, 1))
+  ->select(c => {"id": c.id})
+  ->SQL.fromSelectQuery
+  ->Js.log
+
+  Js.log("")
+}
 
 /* let subQueryTest = () => { */
 /* open QueryBuilder.Select */
@@ -590,11 +624,11 @@ createTables()
 insertData()
 updateData()
 deleteData()
-/* selectNameFromArtist1() */
-/* selectArtistsWithAlbumsWithSongs() */
-/* selectFavoritesOfUser1() */
-/* expressionsTest() */
-/* limitAndOffsetTest() */
+selectNameFromArtist1()
+selectArtistsWithAlbumsWithSongs()
+selectFavoritesOfUser1()
+expressionsTest()
+limitAndOffsetTest()
 /* orderByTest() */
 /* groupByTest() */
 /* subQueryTest() */

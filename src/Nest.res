@@ -8,10 +8,12 @@ let log: 'a => unit = %raw(`
   }
 `)
 
-type rec definitionNode =
-  | ValueDefinition(string)
-  | ObjectDefinition(Dict.t<definitionNode>)
-  | ArrayDefinition({idColumn: string, schema: Dict.t<definitionNode>})
+type rec definitionNode<'a> =
+  | ValueDefinition('a)
+  | ColumnDefinition(Schema.Column.t<'a, 'a>)
+  | ObjectDefinition(Dict.t<definitionNode<'a>>)
+  | ArrayDefinition(Dict.t<definitionNode<'a>>)
+  | GroupDefinition({idColumn: Schema.Column.t<'a, 'a>, schema: Dict.t<definitionNode<'a>>})
 
 /* type rec resultNode<'a> = Value('a) | Object(Dict.t<resultNode<'a>>) | Array(array<resultNode<'a>>) */
 
@@ -25,12 +27,20 @@ let value = (value: 'a): 'a => {
   ValueDefinition(Obj.magic(value))->Obj.magic
 }
 
+let column = (column: 'a): 'a => {
+  ColumnDefinition(Obj.magic(column))->Obj.magic
+}
+
 let object = (schema: 'schema): 'schema => {
   ObjectDefinition(Obj.magic(schema))->Obj.magic
 }
 
-let array = (idColumn, schema: 'schema): 'schema => {
-  ArrayDefinition({idColumn: Obj.magic(idColumn), schema: Obj.magic(schema)})->Obj.magic
+let array = (schema: 'schema): 'schema => {
+  ArrayDefinition(Obj.magic(schema))->Obj.magic
+}
+
+let group = (idColumn: 'a, schema: 'schema): 'schema => {
+  GroupDefinition({idColumn: Obj.magic(idColumn), schema: Obj.magic(schema)})->Obj.magic
 }
 
 type row = {
@@ -99,52 +109,22 @@ let row: 'row = %raw(`
 /* let def = value(row.artist_name) */
 /* let def = object({"id": value(row.artist_id), "name": value(row.artist_name)}) */
 
-let def = array(
+let def = group(
   row.artist_id,
   {
     "id": value(row.artist_id),
     "name": value(row.artist_name),
     "genre": object({"id": value(row.genre_id), "name": value(row.genre_name)}),
-    "albums": array(
+    "albums": group(
       row.album_id,
       {
         "id": value(row.album_id),
         "name": value(row.album_name),
-        "songs": array(row.song_id, {"id": value(row.song_id), "name": value(row.song_name)}),
+        "songs": group(row.song_id, {"id": value(row.song_id), "name": value(row.song_name)}),
       },
     ),
   },
 )
-
-/* let def2 = ArrayDefinition({ */
-/* idColumn: "artist_id", */
-/* schema: { */
-/* "id": ValueDefinition("artist_id"), */
-/* "name": ValueDefinition("artist_name"), */
-/* "genre": ObjectDefinition( */
-/* { */
-/* "id": ValueDefinition("genre_id"), */
-/* "name": ValueDefinition("genre_name"), */
-/* }->Obj.magic, */
-/* ), */
-/* "albums": ArrayDefinition({ */
-/* idColumn: "album_id", */
-/* schema: { */
-/* "id": ValueDefinition("album_id"), */
-/* "name": ValueDefinition("album_name"), */
-/* "songs": ArrayDefinition({ */
-/* idColumn: "song_id", */
-/* schema: { */
-/* "id": ValueDefinition("song_id"), */
-/* "name": ValueDefinition("song_name"), */
-/* }->Obj.magic, */
-/* }), */
-/* }->Obj.magic, */
-/* }), */
-/* }->Obj.magic, */
-/* }) */
-
-/* Console.log(def == Obj.magic(def2)) */
 
 // get all rows with same artist_id
 // get all rows of last step with same album_id
@@ -156,11 +136,14 @@ let groupBy = (rows, idColumn) => {
   let rowsById = Map.make()
 
   Array.forEach(rows, row => {
-    let idValue = Dict.get(row, idColumn)
+    switch Dict.get(row, idColumn)->Option.getUnsafe->Null.toOption {
+    | Some(idValue) =>
+      switch Map.get(rowsById, idValue) {
+      | Some(rows) => Array.push(rows, row)
+      | None => Map.set(rowsById, idValue, [row])
+      }
 
-    switch Map.get(rowsById, idValue) {
-    | Some(rows) => Array.push(rows, row)
-    | None => Map.set(rowsById, idValue, [row])
+    | None => ()
     }
   })
 
@@ -170,9 +153,12 @@ let groupBy = (rows, idColumn) => {
 let rec nodeToValue = (rows, node) => {
   switch node {
   | ValueDefinition(columnName) => rows->getFirstRow->Dict.get(columnName)->valueToResultNode
+  | ColumnDefinition(column) =>
+    rows->getFirstRow->Dict.get(`${column.table}_${column.name}`)->valueToResultNode
   | ObjectDefinition(schema) => schemaToValues(rows, schema)
-  | ArrayDefinition({idColumn, schema}) =>
-    groupBy(rows, idColumn)
+  | ArrayDefinition(schema) => schemaToValues(rows, schema)
+  | GroupDefinition({idColumn, schema}) =>
+    groupBy(rows, `${idColumn.table}_${idColumn.name}`)
     ->Map.values
     ->Iterator.toArray
     ->Array.map(rows => schemaToValues(rows, schema))
@@ -187,12 +173,12 @@ and schemaToValues = (rows, schema) => {
   ->objectToResultNode
 }
 
-let nestIt = (rows, def) => {
+let nestIt = (rows: array<{..}>, def) => {
   /* switch def { */
   /* | ArrayDefinition({idColumn, schema}) => grouped(rows, idColumn, schema) */
   /* | _ => panic("only array definition is allowed as root") */
   /* } */
-  nodeToValue(rows, def)
+  nodeToValue(Obj.magic(rows), Obj.magic(def))
 }
 
 nestIt(rows->Obj.magic, def->Obj.magic)->log

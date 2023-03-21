@@ -38,7 +38,7 @@ type tx<'result, 'a> = {
   groupBy: option<array<Schema.Column.unknownColumn>>,
   limit: option<int>,
   offset: option<int>,
-  projection: 'result,
+  projection: Nest.definitionNode<'result>,
 }
 
 %%private(
@@ -93,7 +93,7 @@ let join1 = (
   q: t<'c1, _>,
   table: Schema.Table.t<'columns, _>,
   joinType,
-  getCondition: (('c1, 'columns)) => (Schema.Column.t<'t, _>, Schema.Column.t<'t, _>),
+  getCondition: (('c1, 'columns)) => ('t, 't),
 ): t<('c1, 'columns), _> => {
   join(q, table, joinType, getCondition, "t1")
 }
@@ -102,7 +102,7 @@ let join2 = (
   q: t<('c1, 'c2), _>,
   table: Schema.Table.t<'columns, _>,
   joinType,
-  getCondition: (('c1, 'c2, 'columns)) => (Schema.Column.t<'t, _>, Schema.Column.t<'t, _>),
+  getCondition: (('c1, 'c2, 'columns)) => ('t, 't),
 ): t<('c1, 'c2, 'columns), _> => {
   join(q, table, joinType, getCondition, "t2")
 }
@@ -111,7 +111,7 @@ let join3 = (
   q: t<('c1, 'c2, 'c3), _>,
   table: Schema.Table.t<'columns, _>,
   joinType,
-  getCondition: (('c1, 'c2, 'c3, 'columns)) => (Schema.Column.t<'t, _>, Schema.Column.t<'t, _>),
+  getCondition: (('c1, 'c2, 'c3, 'columns)) => ('t, 't),
 ): t<('c1, 'c2, 'c3, 'columns), _> => {
   join(q, table, joinType, getCondition, "t3")
 }
@@ -128,7 +128,7 @@ let having = (q: t<'columns, _>, getHaving: 'columns => QueryBuilder_Expr.t<_>):
   {...q, having: Some(having)}
 }
 
-let addOrderBy = (q: t<'columns, _>, getColumn: 'columns => Schema.Column.t<_>, direction): t<'columns, _,
+let addOrderBy = (q: t<'columns, _>, getColumn: 'columns => 'a, direction): t<'columns, _,
 > => {
   let columnAndDirection = {
     column: Utils.ItemOrArray.apply(q.columns, getColumn)->Schema.Column.toUnknownColumn,
@@ -163,7 +163,7 @@ let offset = (q: t<'columns, _>, offset): t<'columns, _> => {
 }
 
 let select = (q: t<'columns, _>, getProjection: 'columns => 'result): tx<'result, _> => {
-  let projection = Utils.ItemOrArray.apply(q.columns, getProjection)
+  let projection = Utils.ItemOrArray.apply(q.columns, getProjection)->Obj.magic
 
   {
     from: q.from,

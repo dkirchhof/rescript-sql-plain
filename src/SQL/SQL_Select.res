@@ -14,24 +14,36 @@ let withAggregation = (string, aggregation) => {
 }
 
 let projectionToSQL = projection => {
-  let columns =
-    make()
-    ->addM(
-      0,
-      projection
-      ->Node.dictFromRecord
-      ->Js.Dict.entries
-      ->Js.Array2.map(((alias, node)) => {
-        switch node {
-        | Node.Column(column) =>
-          withAggregation(`${column.table}.${column.name}`, column.aggregation) ++ ` AS ${alias}`
-        | _ => Js.Exn.raiseError("not implemented yet")
-        }
-      }),
-    )
-    ->build(", ")
+  // get all nodes
+  let nodes = []
 
-  `SELECT ${columns}`
+  let rec traverseDefinitionNodes = node => {
+    switch node {
+    | Nest.ValueDefinition(value) => Array.push(nodes, Node.fromAny(value))
+    | Nest.ColumnDefinition(column) => Array.push(nodes, Node.fromAny(column))
+    | Nest.ObjectDefinition(schema) =>
+      Dict.valuesToArray(schema)->Array.forEach(traverseDefinitionNodes)
+    | Nest.ArrayDefinition(schema) =>
+      Dict.valuesToArray(schema)->Array.forEach(traverseDefinitionNodes)
+    | Nest.GroupDefinition({schema}) =>
+      Dict.valuesToArray(schema)->Array.forEach(traverseDefinitionNodes)
+    }
+  }
+
+  traverseDefinitionNodes(projection)
+
+  let columns =
+    nodes
+    ->Array.map(node =>
+      switch node {
+      | Node.Column(column) => `${column.table}.${column.name} AS ${column.table}_${column.name}`
+      }
+    )
+    ->Set.fromArray
+
+  /* withAggregation(`${column.table}.${column.name}`, column.aggregation) ++ ` AS ${alias}` */
+
+  `SELECT ${columns->Set.values->Iterator.toArray->Array.joinWith(", ")}`
 }
 
 let fromToSQL = (source: QueryBuilder.Select.source) => `FROM ${source.name} AS ${source.alias}`

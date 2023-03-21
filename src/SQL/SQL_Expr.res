@@ -1,52 +1,76 @@
-let simpleExpressionToSQL = (column, right, operator) => {
-  let column = Schema.Column.fromAny(column)
-  let right = Node.fromAny(right)
+let columnToString = (column: Schema.Column.t<_>) => `${column.table}.${column.name}`
 
-  let valueString = switch right {
-  | Node.Literal(value) => SQL_Common.convertIfNeccessary(value, column)->Utils.stringify
-  | Node.Column(column) => `${column.table}.${column.name}`
-  | Node.Query(sql) => `(${sql->Obj.magic})`
-  | _ => Js.Exn.raiseError("not implemented yet")
-  }
-
-  let column = Schema.Column.fromAny(column)
-
-  `${column.table}.${column.name} ${operator} ${valueString}`
+let valueToString = (value, converter: option<Schema.Column.converter<_>>) => {
+  switch converter {
+  | Some(converter) => value->converter.resToDB
+  | _ => value
+  }->Utils.stringify
 }
 
-let betweenExpressionToSQL = (column, min: Node.unknownNode, max: Node.unknownNode, negate) => {
-  let minString = switch min {
-  | Node.Literal(value) => SQL_Common.convertIfNeccessary(value, column)->Utils.stringify
-  | Node.Column(column) => `${column.table}.${column.name}`
-  | Node.Query(sql) => `(${sql->Obj.magic})`
-  | _ => Js.Exn.raiseError("not implemented yet")
-  }
+let simpleExpressionToSQL = (left, right, operator) => {
+  let left = Node.fromAny(left)
+  let right = Node.fromAny(right)
 
-  let maxString = switch max {
-  | Node.Literal(value) => SQL_Common.convertIfNeccessary(value, column)->Utils.stringify
-  | Node.Column(column) => `${column.table}.${column.name}`
-  | Node.Query(sql) => `(${sql->Obj.magic})`
-  | _ => Js.Exn.raiseError("not implemented yet")
+  switch (left, right) {
+  | (Column(leftColumn), Column(rightColumn)) =>
+    [columnToString(leftColumn), operator, columnToString(rightColumn)]->Array.joinWith(" ")
+  | (Column(leftColumn), Literal(rightLiteral)) =>
+    [
+      columnToString(leftColumn),
+      operator,
+      valueToString(rightLiteral, leftColumn.converter),
+    ]->Array.joinWith(" ")
+  | (Literal(leftLiteral), Column(rightColumn)) =>
+    [
+      valueToString(leftLiteral, rightColumn.converter),
+      operator,
+      columnToString(rightColumn),
+    ]->Array.joinWith(" ")
+  | _ => panic("not implemented")
   }
+}
+
+let betweenExpressionToSQL = (left, min, max, negate) => {
+  let left = Node.fromAny(left)
+  let min = Node.fromAny(min)
+  let max = Node.fromAny(max)
 
   let operatorString = negate ? "NOT BETWEEN" : "BETWEEN"
 
-  `${column.table}.${column.name} ${operatorString} ${minString} AND ${maxString}`
+  switch (left, min, max) {
+  | (Column(leftColumn), Literal(minValue), Literal(maxValue)) =>
+    [
+      columnToString(leftColumn),
+      operatorString,
+      valueToString(minValue, leftColumn.converter),
+      "AND",
+      valueToString(maxValue, leftColumn.converter),
+    ]->Array.joinWith(" ")
+  | _ => panic("not implemented")
+  }
 }
 
-let inExpressionToSQL = (column, values: array<Node.unknownNode>, negate) => {
-  let valuesString = values->Belt.Array.joinWith(", ", node => {
-    switch node {
-    | Node.Literal(value) => SQL_Common.convertIfNeccessary(value, column)->Utils.stringify
-    | Node.Column(column) => `${column.table}.${column.name}`
-    | Node.Query(sql) => `${sql->Obj.magic}`
-    | _ => Js.Exn.raiseError("not implemented yet")
+let inExpressionToSQL = (left, values, negate) => {
+  let left = Node.fromAny(left)
+
+  switch left {
+  | Column(left) => {
+      let valuesString = values->Belt.Array.joinWith(", ", value => {
+        let value = Node.fromAny(value)
+
+        switch value {
+        | Literal(value) => valueToString(value, left.converter)
+        | Column(column) => columnToString(column)
+        | _ => panic("not implemented")
+        }
+      })
+      let operatorString = negate ? "NOT IN" : "IN"
+
+      `${columnToString(left)} ${operatorString}(${valuesString})`
     }
-  })
 
-  let operatorString = negate ? "NOT IN" : "IN"
-
-  `${column.table}.${column.name} ${operatorString}(${valuesString})`
+  | _ => panic("not implemented")
+  }
 }
 
 let rec expressionToSQL = expression =>
@@ -56,13 +80,13 @@ let rec expressionToSQL = expression =>
   | QueryBuilder.Expr.Or(expressions) =>
     `(${Belt.Array.joinWith(expressions, " OR ", expressionToSQL(_))})`
   | QueryBuilder.Expr.Equal(left, right) => simpleExpressionToSQL(left, right, "=")
-  | QueryBuilder.Expr.NotEqual(left, right) => simpleExpressionToSQL(left, right, "<>")
+  | QueryBuilder.Expr.NotEqual(left, right) => simpleExpressionToSQL(left, right, "!=")
   | QueryBuilder.Expr.GreaterThan(left, right) => simpleExpressionToSQL(left, right, ">")
   | QueryBuilder.Expr.GreaterThanEqual(left, right) => simpleExpressionToSQL(left, right, ">=")
   | QueryBuilder.Expr.LessThan(left, right) => simpleExpressionToSQL(left, right, "<")
   | QueryBuilder.Expr.LessThanEqual(left, right) => simpleExpressionToSQL(left, right, "<=")
-  /* | QueryBuilder.Expr.Between(column, min, max) => betweenExpressionToSQL(column, min, max, false) */
-  /* | QueryBuilder.Expr.NotBetween(column, min, max) => betweenExpressionToSQL(column, min, max, true) */
-  /* | QueryBuilder.Expr.In(column, values) => inExpressionToSQL(column, values, false) */
-  /* | QueryBuilder.Expr.NotIn(column, values) => inExpressionToSQL(column, values, true) */
+  | QueryBuilder.Expr.Between(left, min, max) => betweenExpressionToSQL(left, min, max, false)
+  | QueryBuilder.Expr.NotBetween(left, min, max) => betweenExpressionToSQL(left, min, max, true)
+  | QueryBuilder.Expr.In(left, values) => inExpressionToSQL(left, values, false)
+  | QueryBuilder.Expr.NotIn(left, values) => inExpressionToSQL(left, values, true)
   }

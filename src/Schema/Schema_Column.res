@@ -6,6 +6,7 @@ type converter<'res, 'db> = {
 type aggregationType = Count | Sum | Avg | Min | Max
 
 type t<'res, 'db> = {
+  nodeType: NodeType.t,
   table: string,
   name: string,
   dbType: [#VARCHAR | #INTEGER | #REAL | #TEXT],
@@ -39,6 +40,7 @@ module Record = {
 type options = {size?: int}
 
 let _varchar = (nullable, converter, options) => Obj.magic({
+  nodeType: #COLUMN,
   table: "",
   name: "",
   dbType: #VARCHAR,
@@ -49,6 +51,7 @@ let _varchar = (nullable, converter, options) => Obj.magic({
 })
 
 let _text = (nullable, converter, options) => Obj.magic({
+  nodeType: #COLUMN,
   table: "",
   name: "",
   dbType: #TEXT,
@@ -59,6 +62,7 @@ let _text = (nullable, converter, options) => Obj.magic({
 })
 
 let _integer = (nullable, converter, options) => Obj.magic({
+  nodeType: #COLUMN,
   table: "",
   name: "",
   dbType: #INTEGER,
@@ -69,6 +73,7 @@ let _integer = (nullable, converter, options) => Obj.magic({
 })
 
 let _float = (nullable, converter, options) => Obj.magic({
+  nodeType: #COLUMN,
   table: "",
   name: "",
   dbType: #REAL,
@@ -79,6 +84,7 @@ let _float = (nullable, converter, options) => Obj.magic({
 })
 
 let _date = (nullable, converter, options) => Obj.magic({
+  nodeType: #COLUMN,
   table: "",
   name: "",
   dbType: #INTEGER,
