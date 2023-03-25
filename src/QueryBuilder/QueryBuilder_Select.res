@@ -179,25 +179,10 @@ let select = (q: t<'columns>, getProjection: 'columns => 'result): tx<'result> =
   }
 }
 
-let column = (column: Schema.Column.t<'a, _>): 'a => Node.Column(column)->Obj.magic
-
 module Agg = {
-  let count = (node): int => aggregate(node, Some(Count))->column->Obj.magic
-  let sum = (node): float => aggregate(node, Some(Sum))->column->Obj.magic
-  let avg = (node): float => aggregate(node, Some(Avg))->column->Obj.magic
-  let min = node => aggregate(node, Some(Min))->column
-  let max = node => aggregate(node, Some(Max))->column
-}
-
-let map = (q: tx<'projection>, row): 'projection => {
-  row->Utils.mapEntries(((columnName, value)) => {
-    let node = q.projection->Node.dictFromRecord->Js.Dict.unsafeGet(columnName)
-
-    let convertedValue = switch node {
-    | Node.Column({converter: Some(converter)}) => value->converter.dbToRes
-    | _ => value
-    }
-
-    (columnName, convertedValue)
-  })
+  let count = (node): int => aggregate(node, Some(Count))->Schema.Column.toIntColumn->Nest.column
+  let sum = (node): float => aggregate(node, Some(Sum))->Schema.Column.toFloatColumn->Nest.column
+  let avg = (node): float => aggregate(node, Some(Avg))->Schema.Column.toFloatColumn->Nest.column
+  let min = node => aggregate(node, Some(Min))->Nest.column
+  let max = node => aggregate(node, Some(Max))->Nest.column
 }

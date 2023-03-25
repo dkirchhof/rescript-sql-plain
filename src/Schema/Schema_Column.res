@@ -18,6 +18,8 @@ type t<'res, 'db> = {
 type unknownColumn = t<unknown, unknown>
 
 external toUnknownColumn: t<_> => unknownColumn = "%identity"
+external toIntColumn: t<_> => t<int, int> = "%identity"
+external toFloatColumn: t<_> => t<float, float> = "%identity"
 external dictFromRecord: 'a => Js.Dict.t<unknownColumn> = "%identity"
 external recordFromDict: Js.Dict.t<unknownColumn> => 'a = "%identity"
 

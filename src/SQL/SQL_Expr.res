@@ -51,7 +51,7 @@ let rec expressionToSQL = expression =>
   | QueryBuilder.Expr.Or(expressions) =>
     `(${Belt.Array.joinWith(expressions, " OR ", expressionToSQL(_))})`
   | QueryBuilder.Expr.Equal(left, right) => simpleExpressionToSQL(left, right, "=")
-  | QueryBuilder.Expr.NotEqual(left, right) => simpleExpressionToSQL(left, right, "<>")
+  | QueryBuilder.Expr.NotEqual(left, right) => simpleExpressionToSQL(left, right, "!=")
   | QueryBuilder.Expr.GreaterThan(left, right) => simpleExpressionToSQL(left, right, ">")
   | QueryBuilder.Expr.GreaterThanEqual(left, right) => simpleExpressionToSQL(left, right, ">=")
   | QueryBuilder.Expr.LessThan(left, right) => simpleExpressionToSQL(left, right, "<")

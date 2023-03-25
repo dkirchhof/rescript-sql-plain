@@ -11,6 +11,7 @@
     "rescript": "^10.1.0-rc.2"
   },
   "dependencies": {
+    "@rescript/core": "^0.2.0",
     "nesthydrationjs": "^2.0.0"
   },
   "optionalDependencies": {

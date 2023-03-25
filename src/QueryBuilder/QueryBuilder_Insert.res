@@ -18,3 +18,4 @@ let values = (q: t<_>, values) => {
 }
 
 let literal = (value: 'a): Schema.Column.t<'a, _> => Node.Literal(value)->Obj.magic
+let skip = Node.Skip->Obj.magic

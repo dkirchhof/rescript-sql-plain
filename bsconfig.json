@@ -18,6 +18,12 @@
       "in-source": true
     }
   ],
-  "bsc-flags": ["-bs-g"],
+  "bs-dependencies": [
+    "@rescript/core"
+  ],
+  "bsc-flags": [
+    "-bs-g",
+    "-open RescriptCore"
+  ],
   "suffix": ".bs.mjs"
 }
