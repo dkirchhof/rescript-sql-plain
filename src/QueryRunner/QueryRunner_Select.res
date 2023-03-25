@@ -1,6 +1,11 @@
-let execute = (query: QueryBuilder.Select.tx<'result>, getRows): array<'result> => {
-  let sql = SQL.fromSelectQuery(query)
-  let rows = getRows(sql)
+type t<'row, 'error> = string => AsyncResult.t<array<'row>, 'error>
 
-  Nest.nestIt(rows, query.projection)->Obj.magic
+let execute = (
+  query: QueryBuilder.Select.tx<array<'row>>,
+  getRows: t<'row, 'error>,
+): AsyncResult.t<array<'result>, 'error> => {
+  let sql = SQL.fromSelectQuery(query)
+  let result = getRows(sql)
+
+  AsyncResult.map(result, rows => Nest.nestIt(rows, query.projection))
 }

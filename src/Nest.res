@@ -108,11 +108,11 @@ and schemaToValues = (rows, schema) => {
   ->objectToResultNode
 }
 
-let nestIt = (rows: array<{..}>, def) => {
+let nestIt = (rows: array<_>, def) => {
   /* switch def { */
   /* | ArrayDefinition({idColumn, schema}) => grouped(rows, idColumn, schema) */
   /* | _ => panic("only array definition is allowed as root") */
   /* } */
 
-  nodeToValue(Obj.magic(rows), Obj.magic(def))
+  nodeToValue(Obj.magic(rows), Obj.magic(def))->Obj.magic
 }

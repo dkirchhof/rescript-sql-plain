@@ -13,7 +13,8 @@ let log: 'a => unit = %raw(`
 `)
 
 let connection = SQLite3.createConnection(":memory:")
-let getRows = sql => connection->SQLite3.prepare(sql)->SQLite3.all
+let exec = sql =>  connection->SQLite3.exec(sql)->AsyncResult.ok
+let getRows = sql => connection->SQLite3.prepare(sql)->SQLite3.all->AsyncResult.ok
 
 module Artist = {
   type t = {
@@ -214,36 +215,6 @@ module Favorites = {
   )
 }
 
-let createTables = () => {
-  open QueryBuilder.CreateTable
-
-  let q1 = createTable(Artists.table)->SQL.fromCreateTableQuery
-  let q2 = createTable(Albums.table)->SQL.fromCreateTableQuery
-  let q3 = createTable(Songs.table)->SQL.fromCreateTableQuery
-  let q4 = createTable(Users.table)->SQL.fromCreateTableQuery
-  let q5 = createTable(Favorites.table)->SQL.fromCreateTableQuery
-
-  log(q1)
-  log("")
-
-  log(q2)
-  log("")
-
-  log(q3)
-  log("")
-  log(q4)
-  log("")
-
-  log(q5)
-  log("")
-
-  SQLite3.exec(connection, q1)
-  SQLite3.exec(connection, q2)
-  SQLite3.exec(connection, q3)
-  SQLite3.exec(connection, q4)
-  SQLite3.exec(connection, q5)
-}
-
 module TestData = {
   let artists: array<Artist.t> = [
     {id: 1, name: "Architects"},
@@ -398,8 +369,43 @@ module TestData = {
   ]
 }
 
-let insertData = () => {
+let createTables = async () => {
+  open QueryBuilder.CreateTable
+  open QueryRunner.CreateTable
+
+  let q1 = createTable(Artists.table)
+
+  /* ->SQL.fromCreateTableQuery */
+  let q2 = createTable(Albums.table)
+  let q3 = createTable(Songs.table)
+  let q4 = createTable(Users.table)
+  let q5 = createTable(Favorites.table)
+
+  q1->SQL.fromCreateTableQuery->log
+  log("")
+
+  q2->SQL.fromCreateTableQuery->log
+  log("")
+
+  q3->SQL.fromCreateTableQuery->log
+  log("")
+
+  q4->SQL.fromCreateTableQuery->log
+  log("")
+
+  q5->SQL.fromCreateTableQuery->log
+  log("")
+
+  let _ = execute(q1, exec)
+  let _ = execute(q2, exec)
+  let _ = execute(q3, exec)
+  let _ = execute(q4, exec)
+  let _ = execute(q5, exec)
+}
+
+let insertData = async () => {
   open QueryBuilder.Insert
+  open QueryRunner.Insert
 
   let q1 =
     insertInto(Artists.table)
@@ -409,7 +415,6 @@ let insertData = () => {
         name: literal(artist.name),
       }),
     )
-    ->SQL.fromInsertQuery
 
   let q2 =
     insertInto(Albums.table)
@@ -421,7 +426,6 @@ let insertData = () => {
         year: literal(album.year),
       }),
     )
-    ->SQL.fromInsertQuery
 
   let q3 =
     insertInto(Songs.table)
@@ -433,7 +437,6 @@ let insertData = () => {
         duration: literal(song.duration),
       }),
     )
-    ->SQL.fromInsertQuery
 
   let q4 =
     insertInto(Users.table)
@@ -443,7 +446,6 @@ let insertData = () => {
         Users.name: literal(user.name),
       }),
     )
-    ->SQL.fromInsertQuery
 
   let q5 =
     insertInto(Favorites.table)
@@ -454,33 +456,34 @@ let insertData = () => {
         likedAt: literal(favorite.likedAt),
       }),
     )
-    ->SQL.fromInsertQuery
 
-  log(q1)
+  
+  q1->SQL.fromInsertQuery->log
   log("")
 
-  log(q2)
+  q2->SQL.fromInsertQuery->log
   log("")
 
-  log(q3)
+  q3->SQL.fromInsertQuery->log
   log("")
 
-  log(q4)
+  q4->SQL.fromInsertQuery->log
   log("")
 
-  log(q5)
+  q5->SQL.fromInsertQuery->log
   log("")
 
-  SQLite3.exec(connection, q1)
-  SQLite3.exec(connection, q2)
-  SQLite3.exec(connection, q3)
-  SQLite3.exec(connection, q4)
-  SQLite3.exec(connection, q5)
+  let _ = await execute(q1, exec)
+  let _ = await execute(q2, exec)
+  let _ = await execute(q3, exec)
+  let _ = await execute(q4, exec)
+  let _ = await execute(q5, exec)
 }
 
-let updateData = () => {
+let updateData = async () => {
   open QueryBuilder.Update
   open QueryBuilder.Expr
+  open QueryRunner.Update
 
   let q1 =
     update(Artists.table)
@@ -489,25 +492,26 @@ let updateData = () => {
       name: literal("DELETEME"),
     })
     ->where(c => equal(c.name, Literal("UPDATEME")))
-    ->SQL.fromUpdateQuery
+    
 
-  log(q1)
+  q1->SQL.fromUpdateQuery->log
   log("")
 
-  SQLite3.exec(connection, q1)
+  let _ = await execute(q1, exec)
 }
 
-let deleteData = () => {
+let deleteData = async () => {
   open QueryBuilder.Delete
   open QueryBuilder.Expr
+  open QueryRunner.Delete
 
   let q1 =
-    deleteFrom(Artists.table)->where(c => equal(c.name, Literal("DELETEME")))->SQL.fromDeleteQuery
+    deleteFrom(Artists.table)->where(c => equal(c.name, Literal("DELETEME")))
 
-  log(q1)
+  q1->SQL.fromDeleteQuery->log
   log("")
 
-  SQLite3.exec(connection, q1)
+  let _ = await execute(q1, exec) 
 }
 
 let selectArtists = () => {
@@ -520,13 +524,11 @@ let selectArtists = () => {
 
   let sql = SQL.fromSelectQuery(q)
 
+  log("")
   log(sql)
   log("")
 
-  let result = execute(q, getRows)
-
-  log(result)
-  log("")
+  execute(q, getRows)->AsyncResult.tap(log)
 }
 
 let selectNameFromArtist1 = () => {
@@ -541,13 +543,11 @@ let selectNameFromArtist1 = () => {
 
   let sql = SQL.fromSelectQuery(q)
 
+  log("")
   log(sql)
   log("")
 
-  let result = execute(q, getRows)
-
-  log(result)
-  log("")
+  execute(q, getRows)->AsyncResult.tap(log)
 }
 
 let selectArtistsWithAlbumsWithSongsRaw = () => {
@@ -568,13 +568,11 @@ let selectArtistsWithAlbumsWithSongsRaw = () => {
 
   let sql = SQL.fromSelectQuery(q)
 
+  log("")
   log(sql)
   log("")
 
-  let result = execute(q, getRows)
-
-  log(result)
-  log("")
+  execute(q, getRows)->AsyncResult.tap(log)
 }
 
 let selectArtistsWithAlbumsWithSongsNested = () => {
@@ -615,13 +613,11 @@ let selectArtistsWithAlbumsWithSongsNested = () => {
 
   let sql = SQL.fromSelectQuery(q)
 
+  log("")
   log(sql)
   log("")
 
-  let result = execute(q, getRows)
-
-  log(result)
-  log("")
+  execute(q, getRows)->AsyncResult.tap(log)
 }
 
 let selectFavoritesOfUser1 = () => {
@@ -632,10 +628,7 @@ let selectFavoritesOfUser1 = () => {
     from(Favorites.table)
     ->innerJoin1(Songs.table, ((favorite, song)) => (favorite.songId, song.id))
     ->innerJoin2(Albums.table, ((_favorite, song, album)) => (song.albumId, album.id))
-    ->innerJoin3(Artists.table, ((_favorite, _song, album, artist)) => (
-      album.artistId,
-      artist.id,
-    ))
+    ->innerJoin3(Artists.table, ((_favorite, _song, album, artist)) => (album.artistId, artist.id))
     ->select(((favorite, song, album, artist)) =>
       Nest.array({
         "songName": Nest.column(song.name),
@@ -647,13 +640,11 @@ let selectFavoritesOfUser1 = () => {
 
   let sql = SQL.fromSelectQuery(q)
 
+  log("")
   log(sql)
   log("")
 
-  let result = execute(q, getRows)
-
-  log(result)
-  log("")
+  execute(q, getRows)->AsyncResult.tap(log)
 }
 
 let expressionsTest = () => {
@@ -758,26 +749,24 @@ let aggregationTest = () => {
 
   log(sql)
   log("")
-
-  /* let mapper = map(q) */
-  /* let result = connection->SQLite3.prepare(sql)->SQLite3.all->Js.Array2.map(mapper) */
-
-  /* log(result) */
-  log("")
 }
 
-createTables()
-insertData()
-updateData()
-deleteData()
-selectArtists()
-selectNameFromArtist1()
-selectArtistsWithAlbumsWithSongsRaw()
-selectArtistsWithAlbumsWithSongsNested()
-selectFavoritesOfUser1()
-expressionsTest()
-limitAndOffsetTest()
-orderByTest()
-groupByTest()
-/* subQueryTest() */
-aggregationTest()
+let test = async () => {
+  let _ = await createTables()
+  let _ = await insertData()
+  let _ = await updateData()
+  let _ = await deleteData()
+  let _ = await selectArtists()
+  let _ = await selectNameFromArtist1()
+  let _ = await selectArtistsWithAlbumsWithSongsRaw()
+  let _ = await selectArtistsWithAlbumsWithSongsNested()
+  let _ = await selectFavoritesOfUser1()
+  expressionsTest()
+  limitAndOffsetTest()
+  orderByTest()
+  groupByTest()
+  /* subQueryTest() */
+  aggregationTest()
+}
+
+let _ = test()

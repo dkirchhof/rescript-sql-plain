@@ -12,7 +12,8 @@
   },
   "dependencies": {
     "@rescript/core": "^0.2.0",
-    "nesthydrationjs": "^2.0.0"
+    "nesthydrationjs": "^2.0.0",
+    "rescript-async-result": "github:dkirchhof/rescript-async-result"
   },
   "optionalDependencies": {
     "better-sqlite3": "^8.0.0"

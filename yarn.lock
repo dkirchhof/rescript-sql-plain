@@ -230,6 +230,10 @@ readable-stream@^3.1.1, readable-stream@^3.4.0:
     string_decoder "^1.1.1"
     util-deprecate "^1.0.1"
 
+"rescript-async-result@github:dkirchhof/rescript-async-result":
+  version "0.1.0"
+  resolved "https://codeload.github.com/dkirchhof/rescript-async-result/tar.gz/12773cfb530f0c222cf4ad8dea99189182a2fb8a"
+
 rescript@^10.1.0-rc.2:
   version "10.1.0-rc.2"
   resolved "https://registry.npmjs.org/rescript/-/rescript-10.1.0-rc.2.tgz"
