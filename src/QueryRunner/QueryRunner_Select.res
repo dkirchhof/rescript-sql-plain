@@ -7,5 +7,5 @@ let execute = (
   let sql = SQL.fromSelectQuery(query)
   let result = getRows(sql)
 
-  AsyncResult.map(result, rows => Nest.nestIt(rows, query.projection))
+  AsyncResult.map(result, rows => QueryBuilder_Select_Nest.nestIt(rows, query.projection))
 }

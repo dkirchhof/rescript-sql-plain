@@ -14,7 +14,8 @@ let withAggregation = (string, aggregation) => {
 }
 
 let projectionToSQL = projection => {
-  let projection: Nest.definitionNode = Obj.magic(projection)
+  open QueryBuilder_Select_Nest
+  let projection: definitionNode = Obj.magic(projection)
 
   // get all nodes
   let nodes = []
@@ -22,12 +23,10 @@ let projectionToSQL = projection => {
   let rec traverseDefinitionNodes = node => {
     switch node {
     /* | Nest.ValueDefinition(value) => Array.push(nodes, value) */
-    | Nest.ColumnDefinition(column) => Array.push(nodes, Node.Column(column)->Obj.magic)
-    | Nest.ObjectDefinition(schema) =>
-      Dict.valuesToArray(schema)->Array.forEach(traverseDefinitionNodes)
-    | Nest.ArrayDefinition(schema) =>
-      Dict.valuesToArray(schema)->Array.forEach(traverseDefinitionNodes)
-    | Nest.GroupDefinition({schema}) =>
+    | ColumnDefinition(column) => Array.push(nodes, Node.Column(column)->Obj.magic)
+    | ObjectDefinition(schema) => Dict.valuesToArray(schema)->Array.forEach(traverseDefinitionNodes)
+    | ArrayDefinition(schema) => Dict.valuesToArray(schema)->Array.forEach(traverseDefinitionNodes)
+    | GroupDefinition({schema}) =>
       Dict.valuesToArray(schema)->Array.forEach(traverseDefinitionNodes)
     }
   }

@@ -519,7 +519,7 @@ let selectArtists = () => {
   open QueryRunner.Select
 
   let q = from(Artists.table)->select(artist => {
-    Nest.array({Artist.id: Nest.column(artist.id), name: Nest.column(artist.name)})
+    array({Artist.id: column(artist.id), name: column(artist.name)})
   })
 
   let sql = SQL.fromSelectQuery(q)
@@ -539,7 +539,7 @@ let selectNameFromArtist1 = () => {
   let q =
     from(Artists.table)
     ->where(artist => equal(artist.id, Literal(1)))
-    ->select(artist => Nest.array({"name": Nest.column(artist.name)}))
+    ->select(artist => array({"name": column(artist.name)}))
 
   let sql = SQL.fromSelectQuery(q)
 
@@ -559,10 +559,10 @@ let selectArtistsWithAlbumsWithSongsRaw = () => {
     ->leftJoin1(Albums.table, ((artist, album)) => (album.artistId, artist.id))
     ->leftJoin2(Songs.table, ((_artist, album, song)) => (song.albumId, Option.getUnsafe(album).id))
     ->select(((artist, album, song)) =>
-      Nest.array({
-        "artistName": Nest.column(artist.name),
-        "albumName": Nest.optionalColumn(album, album => album.name),
-        "songName": Nest.optionalColumn(song, song => song.name),
+      array({
+        "artistName": column(artist.name),
+        "albumName": optionalColumn(album, album => album.name),
+        "songName": optionalColumn(song, song => song.name),
       })
     )
 
@@ -584,25 +584,25 @@ let selectArtistsWithAlbumsWithSongsNested = () => {
     ->leftJoin1(Albums.table, ((artist, album)) => (album.artistId, artist.id))
     ->leftJoin2(Songs.table, ((_artist, album, song)) => (song.albumId, Option.getUnsafe(album).id))
     ->select(((artist, album, song)) =>
-      Nest.group(
+      group(
         artist.id,
         {
-          ArtistWithAlbumsWithSongs.id: Nest.column(artist.id),
-          name: Nest.column(artist.name),
-          albums: Nest.optionalGroup(
+          ArtistWithAlbumsWithSongs.id: column(artist.id),
+          name: column(artist.name),
+          albums: optionalGroup(
             album,
             album => album.id,
             album => {
-              ArtistWithAlbumsWithSongs.id: Nest.column(album.id),
-              name: Nest.column(album.name),
-              year: Nest.column(album.year),
-              songs: Nest.optionalGroup(
+              ArtistWithAlbumsWithSongs.id: column(album.id),
+              name: column(album.name),
+              year: column(album.year),
+              songs: optionalGroup(
                 song,
                 song => song.id,
                 song => {
-                  ArtistWithAlbumsWithSongs.id: Nest.column(song.id),
-                  name: Nest.column(song.name),
-                  duration: Nest.column(song.duration),
+                  ArtistWithAlbumsWithSongs.id: column(song.id),
+                  name: column(song.name),
+                  duration: column(song.duration),
                 },
               ),
             },
@@ -630,11 +630,11 @@ let selectFavoritesOfUser1 = () => {
     ->innerJoin2(Albums.table, ((_favorite, song, album)) => (song.albumId, album.id))
     ->innerJoin3(Artists.table, ((_favorite, _song, album, artist)) => (album.artistId, artist.id))
     ->select(((favorite, song, album, artist)) =>
-      Nest.array({
-        "songName": Nest.column(song.name),
-        "albumName": Nest.column(album.name),
-        "artistName": Nest.column(artist.name),
-        "likedAt": Nest.column(favorite.likedAt),
+      array({
+        "songName": column(song.name),
+        "albumName": column(album.name),
+        "artistName": column(artist.name),
+        "likedAt": column(favorite.likedAt),
       })
     )
 
@@ -669,7 +669,7 @@ let expressionsTest = () => {
   expressions->Js.Array2.forEach(expression => {
     from(Artists.table)
     ->where(expression)
-    ->select(c => Nest.array({"id": Nest.column(c.id)}))
+    ->select(c => array({"id": column(c.id)}))
     ->SQL.fromSelectQuery
     ->Js.log
 
@@ -683,7 +683,7 @@ let limitAndOffsetTest = () => {
   from(Artists.table)
   ->limit(10)
   ->offset(5)
-  ->select(c => Nest.array({"id": Nest.column(c.id)}))
+  ->select(c => array({"id": column(c.id)}))
   ->SQL.fromSelectQuery
   ->Js.log
 
@@ -696,7 +696,7 @@ let orderByTest = () => {
   from(Artists.table)
   ->addOrderBy(c => c.id, Asc)
   ->addOrderBy(c => c.name, Desc)
-  ->select(c => Nest.array({"id": Nest.column(c.id)}))
+  ->select(c => array({"id": column(c.id)}))
   ->SQL.fromSelectQuery
   ->Js.log
 
@@ -711,7 +711,7 @@ let groupByTest = () => {
   ->addGroupBy(c => c.id)
   ->addGroupBy(c => c.name)
   ->having(c => equal(c.id, Literal(1)))
-  ->select(c => Nest.array({"id": Nest.column(c.id)}))
+  ->select(c => array({"id": column(c.id)}))
   ->SQL.fromSelectQuery
   ->Js.log
 
@@ -725,7 +725,7 @@ let groupByTest = () => {
 
 /* from(Artists.table) */
 /* ->where(c => equal(c.id, from(Artists.table)->make(c => Agg.max(c.id)))) */
-/* ->select(c => Nest.array({"id": Nest.column(c.id)})) */
+/* ->select(c => array({"id": column(c.id)})) */
 /* ->SQL.fromSelectQuery */
 /* ->Js.log */
 
@@ -736,7 +736,7 @@ let aggregationTest = () => {
   open QueryBuilder.Select
 
   let q = from(Artists.table)->select(c =>
-    Nest.array({
+    array({
       "count": Agg.count(c.name),
       "sum": Agg.sum(c.name),
       "avg": Agg.avg(c.name),

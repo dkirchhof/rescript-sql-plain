@@ -200,10 +200,17 @@ let select = (q: t<'columns>, getProjection: 'columns => 'result): tx<'result> =
   }
 }
 
+let column = QueryBuilder_Select_Nest.column
+let optionalColumn = QueryBuilder_Select_Nest.optionalColumn
+let array = QueryBuilder_Select_Nest.array
+let optionalArray = QueryBuilder_Select_Nest.optionalArray
+let group = QueryBuilder_Select_Nest.group
+let optionalGroup = QueryBuilder_Select_Nest.optionalGroup
+
 module Agg = {
-  let count = (node): int => aggregate(node, Some(Count))->Schema.Column.toIntColumn->Nest.column
-  let sum = (node): float => aggregate(node, Some(Sum))->Schema.Column.toFloatColumn->Nest.column
-  let avg = (node): float => aggregate(node, Some(Avg))->Schema.Column.toFloatColumn->Nest.column
-  let min = node => aggregate(node, Some(Min))->Nest.column
-  let max = node => aggregate(node, Some(Max))->Nest.column
+  let count = (node): int => aggregate(node, Some(Count))->Schema.Column.toIntColumn->column
+  let sum = (node): float => aggregate(node, Some(Sum))->Schema.Column.toFloatColumn->column
+  let avg = (node): float => aggregate(node, Some(Avg))->Schema.Column.toFloatColumn->column
+  let min = node => aggregate(node, Some(Min))->column
+  let max = node => aggregate(node, Some(Max))->column
 }
