@@ -89,31 +89,52 @@ let from = (table: Schema.Table.t<'columns, _>): t<'columns> => {
   offset: None,
 }
 
-let join1 = (
+let innerJoin1 = (
   q: t<'c1>,
   table: Schema.Table.t<'columns, _>,
-  joinType,
   getCondition: (('c1, 'columns)) => (Schema.Column.t<'t, _>, Schema.Column.t<'t, _>),
 ): t<('c1, 'columns)> => {
-  join(q, table, joinType, getCondition, "t1")
+  join(q, table, Inner, getCondition, "t1")
 }
 
-let join2 = (
+let leftJoin1 = (
+  q: t<'c1>,
+  table: Schema.Table.t<'columns, _>,
+  getCondition: (('c1, 'columns)) => (Schema.Column.t<'t, _>, Schema.Column.t<'t, _>),
+): t<('c1, option<'columns>)> => {
+  join(q, table, Left, getCondition, "t1")
+}
+
+let innerJoin2 = (
   q: t<('c1, 'c2)>,
   table: Schema.Table.t<'columns, _>,
-  joinType,
   getCondition: (('c1, 'c2, 'columns)) => (Schema.Column.t<'t, _>, Schema.Column.t<'t, _>),
 ): t<('c1, 'c2, 'columns)> => {
-  join(q, table, joinType, getCondition, "t2")
+  join(q, table, Inner, getCondition, "t2")
 }
 
-let join3 = (
+let leftJoin2 = (
+  q: t<('c1, 'c2)>,
+  table: Schema.Table.t<'columns, _>,
+  getCondition: (('c1, 'c2, 'columns)) => (Schema.Column.t<'t, _>, Schema.Column.t<'t, _>),
+): t<('c1, 'c2, option<'columns>)> => {
+  join(q, table, Left, getCondition, "t2")
+}
+
+let innerJoin3 = (
   q: t<('c1, 'c2, 'c3)>,
   table: Schema.Table.t<'columns, _>,
-  joinType,
   getCondition: (('c1, 'c2, 'c3, 'columns)) => (Schema.Column.t<'t, _>, Schema.Column.t<'t, _>),
 ): t<('c1, 'c2, 'c3, 'columns)> => {
-  join(q, table, joinType, getCondition, "t3")
+  join(q, table, Inner, getCondition, "t3")
+}
+
+let leftJoin3 = (
+  q: t<('c1, 'c2, 'c3)>,
+  table: Schema.Table.t<'columns, _>,
+  getCondition: (('c1, 'c2, 'c3, 'columns)) => (Schema.Column.t<'t, _>, Schema.Column.t<'t, _>),
+): t<('c1, 'c2, 'c3, option<'columns>)> => {
+  join(q, table, Left, getCondition, "t3")
 }
 
 let where = (q: t<'columns>, getSelection: 'columns => QueryBuilder_Expr.t): t<'columns> => {

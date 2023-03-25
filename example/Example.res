@@ -60,7 +60,7 @@ module ArtistWithAlbumsWithSongs = {
     id: int,
     name: string,
     duration: string,
-  } 
+  }
 
   type albumWithSongs = {
     id: int,
@@ -550,31 +550,63 @@ let selectNameFromArtist1 = () => {
   log("")
 }
 
-let selectArtistsWithAlbumsWithSongs = () => {
+let selectArtistsWithAlbumsWithSongsRaw = () => {
   open QueryBuilder.Select
   open QueryRunner.Select
 
   let q =
     from(Artists.table)
-    ->join1(Albums.table, Left, ((artist, album)) => (album.artistId, artist.id))
-    ->join2(Songs.table, Left, ((_artist, album, song)) => (song.albumId, album.id))
+    ->leftJoin1(Albums.table, ((artist, album)) => (album.artistId, artist.id))
+    ->leftJoin2(Songs.table, ((_artist, album, song)) => (song.albumId, Option.getUnsafe(album).id))
+    ->select(((artist, album, song)) =>
+      Nest.array({
+        "artistName": Nest.column(artist.name),
+        "albumName": Nest.optionalColumn(album, album => album.name),
+        "songName": Nest.optionalColumn(song, song => song.name),
+      })
+    )
+
+  let sql = SQL.fromSelectQuery(q)
+
+  log(sql)
+  log("")
+
+  let result = execute(q, getRows)
+
+  log(result)
+  log("")
+}
+
+let selectArtistsWithAlbumsWithSongsNested = () => {
+  open QueryBuilder.Select
+  open QueryRunner.Select
+
+  let q =
+    from(Artists.table)
+    ->leftJoin1(Albums.table, ((artist, album)) => (album.artistId, artist.id))
+    ->leftJoin2(Songs.table, ((_artist, album, song)) => (song.albumId, Option.getUnsafe(album).id))
     ->select(((artist, album, song)) =>
       Nest.group(
         artist.id,
         {
           ArtistWithAlbumsWithSongs.id: Nest.column(artist.id),
           name: Nest.column(artist.name),
-          albums: Nest.group(
-            album.id,
-            {
+          albums: Nest.optionalGroup(
+            album,
+            album => album.id,
+            album => {
               ArtistWithAlbumsWithSongs.id: Nest.column(album.id),
               name: Nest.column(album.name),
               year: Nest.column(album.year),
-              songs: Nest.array({
-                ArtistWithAlbumsWithSongs.id: Nest.column(song.id),
-                name: Nest.column(song.name),
-                duration: Nest.column(song.duration)
-              }),
+              songs: Nest.optionalGroup(
+                song,
+                song => song.id,
+                song => {
+                  ArtistWithAlbumsWithSongs.id: Nest.column(song.id),
+                  name: Nest.column(song.name),
+                  duration: Nest.column(song.duration),
+                },
+              ),
             },
           ),
         },
@@ -598,9 +630,9 @@ let selectFavoritesOfUser1 = () => {
 
   let q =
     from(Favorites.table)
-    ->join1(Songs.table, Inner, ((favorite, song)) => (favorite.songId, song.id))
-    ->join2(Albums.table, Inner, ((_favorite, song, album)) => (song.albumId, album.id))
-    ->join3(Artists.table, Inner, ((_favorite, _song, album, artist)) => (
+    ->innerJoin1(Songs.table, ((favorite, song)) => (favorite.songId, song.id))
+    ->innerJoin2(Albums.table, ((_favorite, song, album)) => (song.albumId, album.id))
+    ->innerJoin3(Artists.table, ((_favorite, _song, album, artist)) => (
       album.artistId,
       artist.id,
     ))
@@ -740,7 +772,8 @@ updateData()
 deleteData()
 selectArtists()
 selectNameFromArtist1()
-selectArtistsWithAlbumsWithSongs()
+selectArtistsWithAlbumsWithSongsRaw()
+selectArtistsWithAlbumsWithSongsNested()
 selectFavoritesOfUser1()
 expressionsTest()
 limitAndOffsetTest()
