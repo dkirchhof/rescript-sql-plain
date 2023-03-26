@@ -3,7 +3,7 @@ type t<'row, 'error> = string => AsyncResult.t<array<'row>, 'error>
 let execute = (
   query: QueryBuilder.Select.tx<array<'row>>,
   getRows: t<'row, 'error>,
-): AsyncResult.t<array<'result>, 'error> => {
+): AsyncResult.t<array<'row>, 'error> => {
   let sql = SQL.fromSelectQuery(query)
   let result = getRows(sql)
 
