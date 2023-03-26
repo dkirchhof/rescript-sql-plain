@@ -69,3 +69,16 @@ let notIn = (column: Schema.Column.t<'t, _>, values: array<Node.t<'t, _>>) => No
   column->Schema.Column.toUnknownColumn,
   values->Node.toUnknownArray,
 )
+
+module Literal = {
+  let equal = (column, right) => equal(column, Literal(right))
+  let notEqual = (column, right) => notEqual(column, Literal(right))
+  let greaterThan = (column, right) => greaterThan(column, Literal(right))
+  let greaterThanEqual = (column, right) => greaterThanEqual(column, Literal(right))
+  let lessThan = (column, right) => lessThan(column, Literal(right))
+  let lessThanEqual = (column, right) => lessThanEqual(column, Literal(right))
+  let between = (column, min, max) => between(column, Literal(min), Literal(max))
+  let notBetween = (column, min, max) => notBetween(column, Literal(min), Literal(max))
+  let in_ = (column, values) => in_(column, values->Array.map(value => Node.Literal(value)))
+  let notIn = (column, values) => notIn(column, values->Array.map(value => Node.Literal(value)))
+}
