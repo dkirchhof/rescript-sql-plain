@@ -102,28 +102,29 @@ let _date = (nullable, converter, options) => {
 }
 
 let nullConverter = {
-  dbToRes: Js.Null.toOption,
-  resToDB: Js.Null.fromOption,
+  dbToRes: Js.Null.toOption(_),
+  resToDB: Js.Null.fromOption(_),
 }
 
-let varchar: options => stringColumn = _varchar(false, None)
-let optionalVarchar: options => optionalStringColumn = _varchar(true, Some(nullConverter))
+let varchar: options => stringColumn = _varchar(false, None, _)
+let optionalVarchar: options => optionalStringColumn = _varchar(true, Some(nullConverter), _)
 
-let text: options => stringColumn = _text(false, None)
-let optionalText: options => optionalStringColumn = _text(true, Some(nullConverter))
+let text: options => stringColumn = _text(false, None, _)
+let optionalText: options => optionalStringColumn = _text(true, Some(nullConverter), _)
 
-let integer: options => intColumn = _integer(false, None)
-let optionalInteger: options => optionalIntColumn = _integer(true, Some(nullConverter))
+let integer: options => intColumn = _integer(false, None, _)
+let optionalInteger: options => optionalIntColumn = _integer(true, Some(nullConverter), _)
 
-let float: options => floatColumn = _float(false, None)
-let optionalFloat: options => optionalFloatColumn = _float(true, Some(nullConverter))
+let float: options => floatColumn = _float(false, None, _)
+let optionalFloat: options => optionalFloatColumn = _float(true, Some(nullConverter), _)
 
 let date: options => dateColumn = _date(
   false,
   Some({
-    dbToRes: Js.Date.fromString,
-    resToDB: Js.Date.toISOString,
+    dbToRes: Js.Date.fromString(_),
+    resToDB: Js.Date.toISOString(_),
   }),
+  _,
 )
 
 let optionalDate: options => optionalDateColumn = _date(
@@ -132,4 +133,5 @@ let optionalDate: options => optionalDateColumn = _date(
     dbToRes: value => value->Js.Null.toOption->Belt.Option.map(Js.Date.fromString),
     resToDB: value => value->Belt.Option.map(Js.Date.toISOString)->Js.Null.fromOption,
   }),
+  _,
 )
